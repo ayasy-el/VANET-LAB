@@ -1,0 +1,22 @@
+# Eclipse / OMNeT++ metadata
+.metadata/
+*.vci
+*.vec
+*.sca
+results/
+vanet_aodv/results/
+
+# Build artifacts
+out/
+*.o
+*.d
+*.so
+*.a
+bin/veins_inet_run
+
+# Temporary / logs
+*.log
+*.pid
+tmp/
+__pycache__/
+*.pyc

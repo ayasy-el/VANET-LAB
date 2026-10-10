@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<launch>
+    <copy file="maps.net.xml" />
+    <copy file="maps.rou.xml" />
+    <copy file="maps.sumocfg" type="config" />
+</launch>
