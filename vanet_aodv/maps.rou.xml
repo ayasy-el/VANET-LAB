@@ -1,63 +1,63 @@
 <?xml version='1.0' encoding='utf-8'?>
 <routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
-    <vehicle id="0" depart="0.00" departLane="best" departSpeed="max">
+    <vehicle id="0" depart="0.00" type="veh_passenger" departLane="best" departSpeed="max">
         <route edges="28684341#6 70372806#0 70372806#1 70372806#2 70372806#3 70372806#4 470893934 449316576 466589442#1 449316575#0 449316575#1 449316575#2 69358381 297150524#0 297150524#1 297150524#2 297150524#3 297150524#4 297150524#5 297150524#6 448474926 -1117872112" />
     </vehicle>
-    <vehicle id="1" depart="0.00" departLane="best" departSpeed="max">
+    <vehicle id="1" depart="0.00" type="veh_passenger" departLane="best" departSpeed="max">
         <route edges="-448462189#3 -448462189#2 -448462189#1 367907232#0 367907232#1 367907232#4 367907232#5 367907232#6 367907232#7 717053031#0 717053031#1 717053031#2 449889667 449889670#0 361645112#0 -319645336#2 -319645336#1" />
     </vehicle>
-    <vehicle id="3" depart="0.00" departLane="best" departSpeed="max">
+    <vehicle id="2" depart="0.00" type="veh_passenger" departLane="best" departSpeed="max">
         <route edges="457148601 448114209#2 457148600#1 -1117872112 297150524#7 755787484#0 755787484#1 755787484#2 -28684341#6 156235665#8 156235665#9 -156236060" />
     </vehicle>
-    <vehicle id="4" depart="0.00" departLane="best" departSpeed="max">
+    <vehicle id="3" depart="0.00" type="veh_passenger" departLane="best" departSpeed="max">
         <route edges="156235965 223512980#1 223512980#2 223512980#3 223512980#4 320968126 -882241528#2 -882241528#1 -882241528#0 -367907223#1 28684341#4 -1040460227#0 -156235663#6 -156235663#5 -156235663#4 -156235663#3 -156235663#2 -156235663#1 -156235663#0" />
     </vehicle>
-    <vehicle id="5" depart="0.00" departLane="best" departSpeed="max">
+    <vehicle id="4" depart="0.00" type="veh_passenger" departLane="best" departSpeed="max">
         <route edges="-28684341#5 -28684341#4 -367907223#0 717053031#0 717053031#1 717053031#2 449889667 449889670#0 449889669#0 983152466 -156236327#2 156236609#0 156236609#2 156236527" />
     </vehicle>
-    <vehicle id="6" depart="0.00" departLane="best" departSpeed="max">
+    <vehicle id="5" depart="0.00" type="veh_passenger" departLane="best" departSpeed="max">
         <route edges="-156235663#3 -156235663#2 -156235663#1 -156235663#0 449889674#2 449889674#3 449889674#4 449889674#5 449889674#6 778778189#1 778778189#2 223512981#1 223512981#2 223512981#3 156235962#0 156235962#2 -221228203#2" />
     </vehicle>
-    <vehicle id="7" depart="0.00" departLane="best" departSpeed="max">
+    <vehicle id="6" depart="0.00" type="veh_passenger" departLane="best" departSpeed="max">
         <route edges="297150524#1 297150524#2 297150524#3 297150524#4 297150524#5 297150524#6 297150524#7 755787484#0 755787484#1 755787484#2 70372806#0 70372806#1 70372806#2 70372806#3 70372806#4 470893934 36007562#0 36007562#1 156236835#0" />
     </vehicle>
-    <vehicle id="8" depart="0.00" departLane="best" departSpeed="max">
+    <vehicle id="7" depart="0.00" type="veh_passenger" departLane="best" departSpeed="max">
         <route edges="-28684341#6 -28684341#5 -28684341#4 -367907223#0 717053031#0 717053031#1 222088942#0 222088942#1" />
     </vehicle>
-    <vehicle id="9" depart="0.00" departLane="best" departSpeed="max">
+    <vehicle id="8" depart="0.00" type="veh_passenger" departLane="best" departSpeed="max">
         <route edges="448114209#1 448114209#2 457148600#1 -1117872112 297150524#7 367907232#0 367907232#1 367907232#4 367907232#5 367907232#6 367907232#7 917700845#0 -764189119 -1040460227#2" />
     </vehicle>
-    <vehicle id="10" depart="0.00" departLane="best" departSpeed="max">
+    <vehicle id="9" depart="0.00" type="veh_passenger" departLane="best" departSpeed="max">
         <route edges="448114209#1 448114209#2 457148600#1 -1117872112 297150524#7 367907232#0 367907232#1 367907232#4 367907232#5 367907232#6 367907232#7 717053031#0 717053031#1 717053031#2 449889667 449889670#0 319645326" />
     </vehicle>
-    <vehicle id="11" depart="0.00" departLane="best" departSpeed="max">
+    <vehicle id="10" depart="0.00" type="veh_passenger" departLane="best" departSpeed="max">
         <route edges="-847042607 -222088942#0 717053031#2 449889667 449889670#0 361645112#0 361645112#1 361645112#2 882249184#1 882249184#2 1119532819#0 1119532819#1 882241529#1 882241529#2 882241529#3 882241529#4 449889673#0 449889673#1 449889673#2 -156236835#4 -156236835#3 -156236835#1 -156236835#0" />
     </vehicle>
-    <vehicle id="12" depart="0.00" departLane="best" departSpeed="max">
+    <vehicle id="11" depart="0.00" type="veh_passenger" departLane="best" departSpeed="max">
         <route edges="755795563#0 222088940 367907232#1 367907232#4 367907232#5 367907232#6 367907232#7 367907223#0 28684341#4 1040460227#1 1040460227#2 1040460227#3" />
     </vehicle>
-    <vehicle id="13" depart="0.00" departLane="best" departSpeed="max">
+    <vehicle id="12" depart="0.00" type="veh_passenger" departLane="best" departSpeed="max">
         <route edges="-156236323 733442572 -156236296#0" />
     </vehicle>
-    <vehicle id="15" depart="0.00" departLane="best" departSpeed="max">
+    <vehicle id="13" depart="0.00" type="veh_passenger" departLane="best" departSpeed="max">
         <route edges="448114209#1 448114209#2 457148600#1 -1117872112 297150524#7 755787484#0 755787484#1 755787484#2 70372806#0 70372806#1 70372806#2 70372806#3 70372806#4 470893934 449316576 466589442#1 320968132" />
     </vehicle>
-    <vehicle id="16" depart="0.00" departLane="best" departSpeed="max">
+    <vehicle id="14" depart="0.00" type="veh_passenger" departLane="best" departSpeed="max">
         <route edges="156236584#0 156236475#0 156236475#1 156236475#2 28716880#1 28716880#2 717053031#0 717053031#1 717053031#2 449889667 449889670#0 361645112#0 -319645336#2 -1116347844 764167506" />
     </vehicle>
-    <vehicle id="17" depart="0.00" departLane="best" departSpeed="max">
+    <vehicle id="15" depart="0.00" type="veh_passenger" departLane="best" departSpeed="max">
         <route edges="156235664#0 156235664#1 223512980#4 320968126 -882241528#2 -882241528#1 -882241528#0 449889674#3 449889674#4 449889674#5 449889674#6 778778189#1 -733442573#1 -733442573#0 156236914#1" />
     </vehicle>
-    <vehicle id="18" depart="0.00" departLane="best" departSpeed="max">
+    <vehicle id="16" depart="0.00" type="veh_passenger" departLane="best" departSpeed="max">
         <route edges="449889665#0 449889665#1 320968113#1 320968113#2 320968113#3 456281822#1 223512981#1 223512981#2 223512981#3" />
     </vehicle>
-    <vehicle id="19" depart="0.00" departLane="best" departSpeed="max">
+    <vehicle id="17" depart="0.00" type="veh_passenger" departLane="best" departSpeed="max">
         <route edges="449889674#4 449889674#5 156236307#3 28684341#0 221226740#0" />
     </vehicle>
-    <vehicle id="20" depart="0.00" departLane="best" departSpeed="max">
+    <vehicle id="18" depart="0.00" type="veh_passenger" departLane="best" departSpeed="max">
         <route edges="320968117#0 320968117#1 449316575#1 449316575#2 69358381 297150524#0 297150524#1 297150524#2 297150524#3 297150524#4 297150524#5 297150524#6 297150524#7 755787484#0 755787484#1 755787484#2 -28684341#6 -156235665#7 -156235665#6 -156235700" />
     </vehicle>
-    <vehicle id="21" depart="0.00" departLane="best" departSpeed="max">
+    <vehicle id="19" depart="0.00" type="veh_passenger" departLane="best" departSpeed="max">
         <route edges="-297150525#2 -297150525#1 -297150525#0 69358381 297150524#0 578393548 -578393548" />
     </vehicle>
 </routes>

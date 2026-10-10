@@ -18,10 +18,10 @@ else
     exit 1
 fi
 
-CONFIG="${1:-GUI}"
+CONFIG="${1:-AODV_V2V_Ping}"
 
 echo "=========================================================="
-echo "  VANET AODV SIMULATION (GUI MODE)"
+echo "  VANET AODV SIMULATION (GUI MODE - Qtenv)"
 echo "  Configuration: ${CONFIG}"
 echo "=========================================================="
 

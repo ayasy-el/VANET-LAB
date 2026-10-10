@@ -31,7 +31,7 @@ network Scenario
             @display("p=150,500");
         }
         rsu[numRsu]: VeinsAodvRSU {
-            @display("p=1025,870");
+            @display("p=1040,868");
         }
         node[0]: VeinsAodvCar;
 }

@@ -1,108 +1,144 @@
-# Simulasi Routing Protokol AODV pada VANET
+# 🚗 Workspace Simulasi VANET-AODV (OMNeT++)
 
-Projek lengkap simulasi jaringan kendaraan (**VANET - Vehicular Ad-hoc Network**) menggunakan **OMNeT++ 6.x**, **INET Framework 4.5.x**, **Veins 5.3.x**, dan simulator lalu lintas **Eclipse SUMO**. Projek ini menguji kinerja protokol routing **AODV (Ad hoc On-Demand Distance Vector, RFC 3561)** pada peta jalan (`maps.sumocfg`).
+Workspace ini memuat seluruh kode sumber topologi jaringan (*NED files*), skenario simulasi (*omnetpp.ini*), file konfigurasi mobilitas SUMO, serta skrip otomasi eksekusi simulasi routing **AODV (RFC 3561)** pada lingkungan **VANET**.
 
----
-
-## 1. Struktur Direktori Projek
-
-Projek telah dirapikan tanpa duplikasi file:
-
-```text
-vanet_aodv/
-├── .project                # File project OMNeT++ IDE
-├── .nedfolders             # Konfigurasi source NED
-├── package.ned             # Deklarasi package (vanet_aodv)
-├── Scenario.ned            # Topologi jaringan (RadioMedium, TraCI Manager, Visualizer, Nodes, RSU)
-├── VeinsAodvCar.ned        # Modul node kendaraan bergerak (IEEE 802.11p + AODV + VeinsInetMobility)
-├── VeinsAodvRSU.ned        # Modul Road-Side Unit statis di persimpangan jalan
-├── omnetpp.ini             # Konfigurasi simulasi lengkap (studi kasus V2V & V2I)
-├── maps.sumocfg            # Konfigurasi utama SUMO
-├── maps.net.xml            # Jaringan jalan peta
-├── maps.rou.xml            # File rute aktif SUMO (seluruh mobil berangkat di t=0s)
-├── maps.rou.all.xml        # Master pool seluruh rute kendaraan
-├── maps.launchd.xml        # Bridge TraCI untuk peluncuran SUMO
-├── empty.xml               # Lingkungan fisik
-├── set_nodes.py            # Script 1-baris untuk mengubah jumlah node mobil secara instan
-├── run_cmd.sh              # Script eksekusi simulasi mode Command Line (Cmdenv)
-├── run_gui.sh              # Script eksekusi simulasi mode Grafis GUI (Qtenv)
-├── run_veins_launchd.sh    # Script kontrol daemon veins_launchd
-├── results/                # Direktori penyimpanan hasil simulasi (*.sca, *.vec)
-└── README.md               # Dokumentasi projek
-```
+> 📖 **Dokumentasi Lengkap**: Panduan arsitektur komprehensif, spesifikasi fisik IEEE 802.11p, dan analisis data tersedia di [Root README](../README.md) dan [Wiki Proyek](../wiki/Home.md).
 
 ---
 
-## 2. Skenario Studi Kasus di `omnetpp.ini`
+## 1. Topologi Jaringan & Modul NED
 
-Terdapat 4 konfigurasi kasus pengujian di `omnetpp.ini`:
+Topologi jaringan dikembangkan modular menggunakan modul-modul berikut:
 
-| Konfigurasi | Kasus Pengujian | Deskripsi & Aliran Data |
-|---|---|---|
-| **`[Config AODV_V2V_Ping]`** | **V2V Ping (ICMP)** | Mobil 0 menguji route discovery AODV menuju Mobil 1 dengan mengirim Ping berkala sambil melaju. Mobil lain menjadi perantara multi-hop. Mengukur **RTT** dan **packet loss**. |
-| **`[Config AODV_V2V_UDP]`** | **V2V UDP Data** | Mobil 0 mengirim aliran data UDP CBR (512B) ke Mobil 1 (`UdpSink`) sambil kedua mobil melaju di jalan. Mengukur **Throughput** dan **PDR**. |
-| **`[Config AODV_V2I_RSU]`** | **V2I Telemetri ke RSU** | RSU statis ditempatkan di persimpangan tengah peta. Seluruh mobil yang melaju mengirim laporan data telemetri ke RSU via multi-hop AODV. |
-| **`[Config AODV_HelloMessages]`** | **AODV HELLO Mechanism** | Menguji AODV dengan pengiriman pesan HELLO berkala (1s) sesuai RFC 3561 untuk pemeliharaan tabel tetangga (*neighbor sensing*). |
-| **`[Config GUI]`** | **Tampilan Visual Lengkap** | Mode interaktif Qtenv dengan **lingkaran jangkauan radio (biru)**, **link 1-hop yang berhasil (kuning/emas)**, dan **rute multi-hop AODV (hijau terang)** tanpa garis merah yang membingungkan. |
+- **`Scenario.ned`**: Topologi tingkat atas (*Network Scenario*). Mengintegrasikan modul `radioMedium` (IEEE 802.11p DSRC 5.9 GHz), `manager` (`VeinsInetManager`), `visualizer` (`IntegratedVisualizer`), `roadsCanvasVisualizer`, armada kendaraan bergerak `node[*]`, serta node infrastruktur `rsu[*]`.
+- **`VeinsAodvCar.ned`**: Modul kendaraan bergerak yang memperluas (*extends*) `inet.node.aodv.AodvRouter`. Dilengkapi kartu jaringan nirkabel IEEE 802.11p dan adaptor mobilitas TraCI `VeinsInetMobility`.
+- **`VeinsAodvRSU.ned`**: Modul Road-Side Unit statis berbasis `AodvRouter` yang ditempatkan di persimpangan jalan perkotaan untuk skenario V2I.
 
 ---
 
-## 3. Cara Mengubah Jumlah Node Mobil (Sangat Mudah)
+## 2. Skenario Studi Kasus (`omnetpp.ini`)
 
-Untuk menambah atau mengurangi jumlah mobil yang melaju di jalan, gunakan script **`set_nodes.py`**:
+Seluruh skenario pengujian mewarisi konfigurasi global `[General]` (termasuk visualizer multi-layer, frekuensi DSRC 5.9 GHz, dan subnetting 10.0.0.0/8):
+
+| Skenario | Paradigma Komunikasi | Stack Aplikasi | Deskripsi Aliran Data & Evaluasi |
+|---|:---:|:---:|---|
+| **`AODV_V2V_Ping`** | V2V (1 ke 1) | ICMP (`PingApp`) | Mobil 0 mengirim ping berkala (56 B) ke Mobil 1 sambil melaju. Menguji *Round-Trip Time* (RTT), pembentukan rute simetris, dan latensi *route discovery*. |
+| **`AODV_V2V_UDP`** | V2V (1 ke 1) | UDP (`UdpBasicApp`) | Transmisi aliran data kontinu CBR (512 B) dari Mobil 0 ke Mobil 1 (`UdpSink`). Mengukur *Throughput* dan *Packet Delivery Ratio* (PDR). |
+| **`AODV_V2I_RSU`** | V2I ($N$ ke 1) | UDP Telemetry | Seluruh armada mobil mengirimkan status telemetri (256 B) secara berkala ke 1 RSU statis di persimpangan. Menguji agregasi multi-hop dan skalabilitas jaringan. |
+| **`AODV_HelloMessages`** | V2V (1 ke 1) | UDP + HELLO RFC 3561 | Evaluasi AODV dengan pengaktifan pesan siaran periodik HELLO ($1\text{s}$) untuk membandingkan *routing overhead* terhadap umpan balik layer MAC. |
+
+---
+
+## 3. Impor Peta Baru (`import_map.sh`) & Manajemen Kepadatan
+
+### A. Impor Peta Baru Langsung dari File `.osm`
+Untuk mengganti seluruh peta jalan dengan data OpenStreetMap baru, jalankan:
 
 ```bash
-cd vanet_aodv
+# Dari root atau folder vanet_aodv:
+./import_map.sh <BERKAS_OSM> [JUMLAH_MOBIL]
 
-# Mau 10 mobil:
+# Contoh:
+./import_map.sh kota_baru.osm 25
+```
+Skrip ini mengonversi `.osm` ke SUMO via `netconvert --proj.utm`, menghitung luas dan pusat kota, otomatis memperbarui posisi RSU di `omnetpp.ini` dan kanvas di `Scenario.ned`, lalu membuat rute valid serentak di $t=0\text{s}$.
+
+---
+
+### B. Mengubah Kepadatan Kendaraan pada Peta Aktif (`set_nodes.py`)
+Skrip **`set_nodes.py`** digunakan untuk mengatur jumlah kendaraan yang aktif melaju di peta jalan yang sedang terpasang tanpa membuat ulang peta:
+
+```bash
+./set_nodes.py <JUMLAH_KENDARAAN>
+```
+
+### Contoh Penggunaan:
+```bash
+# Menetapkan kepadatan rendah (10 kendaraan):
 ./set_nodes.py 10
 
-# Mau 20 mobil:
-./set_nodes.py 20
+# Menetapkan kepadatan sedang (25 kendaraan):
+./set_nodes.py 25
 
-# Mau 50 mobil:
+# Menetapkan kepadatan tinggi (50 kendaraan):
 ./set_nodes.py 50
 ```
 
-> **Catatan:** Script ini langsung meng-overwrite file `maps.rou.xml`. Semua mobil yang dipilih langsung berangkat serentak di awal simulasi ($t=0.00$s) dan melaju di peta jalan.
+### Karakteristik Teknis:
+- Mengekstrak rute dari master `maps.rou.all.xml` (menyimpan 91 rute kendaraan unik) dan memperbarui `maps.rou.xml`.
+- Memaksa seluruh kendaraan untuk berangkat serentak pada $t = 0{,}00\text{ s}$ (`depart="0.00"`).
+- Mengatur akselerasi optimal instan (`departSpeed="max"`) dan penempatan lajur terbaik (`departLane="best"`).
 
 ---
 
-## 4. Cara Menjalankan Simulasi
+## 4. Panduan Eksekusi Simulasi
 
-### Cara A: Melalui Terminal (Script Otomatis)
-Script `run_cmd.sh` akan otomatis menyalakan `veins_launchd`, mengeksekusi simulasi, menampilkan log statistik, dan mematikan daemon setelah selesai:
+### Mode A: Terminal Headless (`run_cmd.sh`)
+Dirancang untuk eksekusi otomatis tanpa antarmuka grafis (ideal untuk *batch benchmarking*):
 
 ```bash
-cd vanet_aodv
+# Sintaks: ./run_cmd.sh <NAMA_SKENARIO> [DURASI]
 
-# 1. Jalankan V2V Ping (durasi 30 detik):
 ./run_cmd.sh AODV_V2V_Ping 30s
+./run_cmd.sh AODV_V2V_UDP 60s
+./run_cmd.sh AODV_V2I_RSU 60s
+./run_cmd.sh AODV_HelloMessages 60s
+```
 
-# 2. Jalankan V2V UDP:
-./run_cmd.sh AODV_V2V_UDP 30s
+*Skrip ini secara otomatis memverifikasi dan menyalakan daemon `veins_launchd` di latar belakang, menjalankan simulasi, serta mematikan daemon secara aman saat selesai.*
 
-# 3. Jalankan V2I RSU:
-./run_cmd.sh AODV_V2I_RSU 30s
+---
 
-# 4. Jalankan AODV dengan Hello Messages:
-./run_cmd.sh AODV_HelloMessages 30s
+### Mode B: Visual Grafis Interaktif (`run_gui.sh`)
+Membuka antarmuka interaktif Qtenv lengkap dengan visualisasi jangkauan radio fisik, koneksi data-link MAC 1-hop, dan rute multi-hop AODV:
 
-# 5. Jalankan Tampilan Visual GUI (Qtenv):
-./run_gui.sh GUI
+```bash
+# Menjalankan skenario default (AODV_V2V_Ping):
+./run_gui.sh
+
+# Menjalankan skenario tertentu secara eksplisit:
+./run_gui.sh AODV_V2V_UDP
+./run_gui.sh AODV_V2I_RSU
+./run_gui.sh AODV_HelloMessages
 ```
 
 ---
 
-### Cara B: Melalui OMNeT++ IDE
-1. Jalankan daemon TraCI terlebih dahulu di terminal:
+### Mode C: Menjalankan via OMNeT++ IDE
+1. Jalankan daemon TraCI di terminal:
    ```bash
-   ./vanet_aodv/run_veins_launchd.sh start
+   ./run_veins_launchd.sh start
    ```
-2. Buka OMNeT++ IDE, klik kanan `omnetpp.ini` > **Run As** > **OMNeT++ Simulation**.
-3. Pilih skenario yang diinginkan (misal: `AODV_V2V_Ping`, `AODV_V2V_UDP`, atau `GUI`).
-4. Klik **Run**.
-5. Jika sudah selesai, hentikan daemon dengan:
+2. Buka OMNeT++ IDE, klik kanan berkas `omnetpp.ini` > **Run As** > **OMNeT++ Simulation**.
+3. Pilih skenario target (misal: `AODV_V2V_Ping`) lalu klik **OK**.
+4. Hentikan daemon setelah pengujian selesai:
    ```bash
-   ./vanet_aodv/run_veins_launchd.sh stop
+   ./run_veins_launchd.sh stop
    ```
+
+---
+
+## 5. Struktur Direktori Workspace
+
+```text
+vanet_aodv/
+├── .project                # Metadata proyek OMNeT++ IDE
+├── .nedfolders             # Konfigurasi path modul NED
+├── package.ned             # Deklarasi package vanet_aodv
+├── Scenario.ned            # Topologi utama jaringan
+├── VeinsAodvCar.ned        # Modul node kendaraan bergerak
+├── VeinsAodvRSU.ned        # Modul Road-Side Unit statis
+├── omnetpp.ini             # Konfigurasi simulasi & skenario benchmark
+├── empty.xml               # Lingkungan fisik tanpa rintangan buatan
+├── maps.net.xml            # Jaringan jalan SUMO (proyeksi UTM kartesius)
+├── maps.rou.xml            # Rute kendaraan aktif yang disimulasikan
+├── maps.rou.all.xml        # Master pool rute 91 kendaraan SUMO
+├── maps.sumocfg            # Berkas konfigurasi utama simulasi SUMO
+├── maps.launchd.xml        # Konfigurasi TraCI launchd untuk SUMO
+├── set_nodes.py            # Utilitas CLI pengubah skala jumlah kendaraan
+├── run_cmd.sh              # Skrip runner mode terminal (Cmdenv)
+├── run_gui.sh              # Skrip runner mode grafis (Qtenv)
+├── run_veins_launchd.sh    # Skrip kontrol daemon veins_launchd
+├── results/                # Output rekaman statistik (*.sca, *.vec)
+└── README.md               # Dokumentasi teknis workspace ini
+```
