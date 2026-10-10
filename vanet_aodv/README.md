@@ -43,7 +43,7 @@ Terdapat 4 konfigurasi kasus pengujian di `omnetpp.ini`:
 | **`[Config AODV_V2V_UDP]`** | **V2V UDP Data** | Mobil 0 mengirim aliran data UDP CBR (512B) ke Mobil 1 (`UdpSink`) sambil kedua mobil melaju di jalan. Mengukur **Throughput** dan **PDR**. |
 | **`[Config AODV_V2I_RSU]`** | **V2I Telemetri ke RSU** | RSU statis ditempatkan di persimpangan tengah peta. Seluruh mobil yang melaju mengirim laporan data telemetri ke RSU via multi-hop AODV. |
 | **`[Config AODV_HelloMessages]`** | **AODV HELLO Mechanism** | Menguji AODV dengan pengiriman pesan HELLO berkala (1s) sesuai RFC 3561 untuk pemeliharaan tabel tetangga (*neighbor sensing*). |
-| **`[Config GUI]`** | **Tampilan Visual Lengkap** | Mode interaktif Qtenv dengan animasi pergerakan mobil, garis link fisik, dan visualisasi rute AODV. |
+| **`[Config GUI]`** | **Tampilan Visual Lengkap** | Mode interaktif Qtenv dengan **lingkaran jangkauan radio (biru)**, **link 1-hop yang berhasil (kuning/emas)**, dan **rute multi-hop AODV (hijau terang)** tanpa garis merah yang membingungkan. |
 
 ---
 
