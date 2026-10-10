@@ -3,9 +3,9 @@ package vanet_aodv;
 import inet.node.aodv.AodvRouter;
 
 //
-// Modul kendaraan bergerak untuk VANET yang mengimplementasikan protokol routing AODV
-// di atas antarmuka nirkabel IEEE 802.11p (DSRC/WAVE).
-// Posisi dan mobilitas kendaraan disinkronisasikan secara dinamis dengan SUMO via TraCI.
+// Mobile vehicular node for VANET implementing the AODV routing protocol
+// over an IEEE 802.11p (DSRC/WAVE) wireless network interface.
+// Vehicular position and mobility are dynamically synchronized with SUMO via TraCI.
 //
 module VeinsAodvCar extends AodvRouter
 {

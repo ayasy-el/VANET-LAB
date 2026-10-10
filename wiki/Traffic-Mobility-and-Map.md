@@ -1,22 +1,22 @@
-# 🗺️ Mobilitas Lalu Lintas & Peta Jalan
+# 🗺️ Traffic Mobility & Road Map
 
-Dokumen ini mendokumentasikan proses pengolahan data geospasial jalan raya, konfigurasi mobilitas mikroskopik kendaraan pada **Eclipse SUMO**, serta mekanisme rekayasa jumlah node kendaraan menggunakan skrip otomasi.
+This document describes the processing of urban geospatial road data, microscopic vehicular mobility configuration in **Eclipse SUMO**, fleet scaling utilities, and the automated OSM import pipeline.
 
 ---
 
-## 1. Pemodelan Wilayah Geospasial (OpenStreetMap ke SUMO)
+## 1. Geospatial Road Modeling (OpenStreetMap to SUMO)
 
-Peta simulasi menggunakan data jalan raya nyata dari kawasan perkotaan Keputih (Surabaya). Alur pemrosesan data dilakukan melalui tahapan pipeline standar SUMO:
+The baseline simulation uses road network data exported from OpenStreetMap (`map.osm`) covering an urban district. The conversion follows SUMO's processing pipeline:
 
 ```
 ┌──────────────┐                  ┌──────────────┐                  ┌──────────────┐
 │   map.osm    │── netconvert ───►│ maps.net.xml │── duarouter ────►│ maps.rou.xml │
-│ (Data Mentah)│                  │(Jalan Kartes)│   trips.trips.xml│(Rute Kendaraan)
+│ (Raw OSM XML)│                  │(Cartesian Net│   trips.trips.xml│(Active Routes│
 └──────────────┘                  └──────────────┘                  └──────────────┘
 ```
 
-### A. Dimensi & Batas Koordinat Lapangan (`convBoundary`)
-Dalam berkas `maps.net.xml`, jaringan jalan diproyeksikan dari koordinat garis lintang/bujur WGS84 ke sistem kartesius lokal menggunakan UTM (*Universal Transverse Mercator*):
+### A. Dimensions & Boundary Box (`convBoundary`)
+In `maps.net.xml`, longitude/latitude WGS84 coordinates are projected into local cartesian meters using UTM (*Universal Transverse Mercator*):
 
 ```xml
 <location netOffset="-698305.12,-9199320.14" 
@@ -25,108 +25,93 @@ Dalam berkas `maps.net.xml`, jaringan jalan diproyeksikan dari koordinat garis l
           projParameter="+proj=utm +zone=49 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"/>
 ```
 
-- **Sumbu Horizontal (X)**: $0{,}00\text{ m} \rightarrow 2.080{,}89\text{ m}$ ($\approx 2{,}08\text{ km}$)
-- **Sumbu Vertikal (Y)**: $0{,}00\text{ m} \rightarrow 1.737{,}66\text{ m}$ ($\approx 1{,}74\text{ km}$)
-- **Panjang Garis Diagonal Wilayah**:
-  $$\text{Diagonal} = \sqrt{(2080{,}89)^2 + (1737{,}66)^2} = \sqrt{4.330.103 + 3.019.462} \approx \mathbf{2.711\text{ meter}}$$
-- **Total Luas Cakupan**:
-  $$\text{Luas} = 2{,}08089\text{ km} \times 1{,}73766\text{ km} \approx \mathbf{3{,}61\text{ km}^2}$$
+- **Horizontal Width (X-axis)**: $0.00\text{ m} \rightarrow 2080.89\text{ m}$ ($\approx 2.08\text{ km}$)
+- **Vertical Height (Y-axis)**: $0.00\text{ m} \rightarrow 1737.66\text{ m}$ ($\approx 1.74\text{ km}$)
+- **Maximum Diagonal**:
+  $$\text{Diagonal} = \sqrt{(2080.89)^2 + (1737.66)^2} \approx \mathbf{2,711\text{ meters}}$$
+- **Total Area**:
+  $$\text{Area} = 2.08089\text{ km} \times 1.73766\text{ km} \approx \mathbf{3.61\text{ km}^2}$$
 
 ---
 
-## 2. Manajemen Rute Kendaraan (`maps.rou.xml`)
+## 2. Vehicle Route Management (`maps.rou.xml`)
 
-Berkas mobilitas kendaraan mendefinisikan rute awal (*origin*) dan akhir (*destination*) tiap mobil, jenis kendaraan, dan model perilaku mengemudi (*car-following model* seperti Krauss).
+Route files dictate origin-destination paths, vehicular classes, and microscopic driving behaviors (e.g., the Krauss car-following model).
 
-### Masalah Pola Keberangkatan Bertahap (*Staggered Departures*)
-Secara default, generator lalu lintas sering kali menetapkan mobil berangkat secara bertahap (mobil 0 di detik 0, mobil 1 di detik 1, mobil 2 di detik 2, dst.).
-- **Dampak Negatif pada Simulasi VANET**: Jika simulasi berjalan selama 30 detik dengan 20 mobil, maka mobil ke-19 baru muncul di detik ke-19. Akibatnya, pada detik-detik awal kepadatan mobil sangat renggang, topologi tidak terhubung (*network partitioned*), dan paket data gagal terkirim.
+### The Staggered Departure Problem
+By default, random trip generators assign staggered departure times (Vehicle 0 at $t=0\text{s}$, Vehicle 1 at $t=1\text{s}$, Vehicle 2 at $t=2\text{s}$, etc.).
+- **Impact on VANET Research**: In a 30-second run, later vehicles only enter the simulation toward the very end. The network remains heavily partitioned during the initial seconds, preventing early multi-hop packet routing.
 
-### Solusi: Keberangkatan Serentak (*Simultaneous Deployment*)
-Dalam proyek ini, seluruh mobil diatur agar **berangkat serentak tepat pada $t = 0{,}00\text{ detik}$**:
+### The Simultaneous Deployment Solution
+In this testbed, all active vehicles are scheduled to **deploy simultaneously at $t = 0.00\text{ seconds}$**:
 ```xml
 <vehicle id="0" type="veh_passenger" depart="0.00" departLane="best" departSpeed="max">
     <route edges="44815464#0 44815464#1 44815464#2 ..."/>
 </vehicle>
 ```
-- **`depart="0.00"`**: Mobil langsung muncul di peta sejak awal simulasi.
-- **`departLane="best"`**: Mobil langsung memilih lajur jalan terbaik untuk rutenya, menghindari antrean di lajur masuk.
-- **`departSpeed="max"`**: Mobil langsung melaju dengan kecepatan maksimal batas jalan tanpa menunggu akselerasi lambat dari 0 km/jam.
+- **`depart="0.00"`**: Vehicles populate the road network from second zero.
+- **`departLane="best"`**: Cars immediately occupy optimal lanes for their respective paths, avoiding merge bottlenecks.
+- **`departSpeed="max"`**: Cars start at road speed limits rather than accelerating slowly from a dead stop.
 
 ---
 
-## 3. Otomasi Pengaturan Node (`set_nodes.py`)
+## 3. Dynamic Vehicle Density Scaling (`set_nodes.py`)
 
-Untuk mempermudah eksperimen tanpa harus menyunting file XML yang panjang, disediakan skrip Python **`vanet_aodv/set_nodes.py`**.
+To quickly benchmark different traffic densities without editing XML manually, the Python utility **`vanet_aodv/set_nodes.py`** extracts a chosen subset from the master route pool (`maps.rou.all.xml`):
 
-Skrip ini membaca berkas induk **`maps.rou.all.xml`** (yang menyimpan total **91 kendaraan unik**) dan memotongnya sesuai jumlah node yang diminta pengguna:
-
-```python
-# Cara kerja inti set_nodes.py
-tree = ET.parse("maps.rou.all.xml")
-vehicles = tree.getroot().findall("vehicle")
-
-# Mengambil N mobil pertama dan memaksakan depart=0.00s
-for v in vehicles[:n]:
-    v.set("depart", "0.00")
-    v.set("departLane", "best")
-    v.set("departSpeed", "max")
-    new_root.append(v)
-```
-
-### Panduan Penggunaan Skrip:
 ```bash
 cd vanet_aodv
 
-# Mengatur kepadatan rendah (10 mobil):
+# Low density (10 vehicles):
 ./set_nodes.py 10
 
-# Mengatur kepadatan sedang (25 mobil):
+# Medium density (25 vehicles):
 ./set_nodes.py 25
 
-# Mengatur kepadatan tinggi (50 mobil):
+# High density (50 vehicles):
 ./set_nodes.py 50
+```
 
-# Mengatur kapasitas penuh (91 mobil):
-./set_nodes.py 91
+```text
+[✓] Berhasil mengupdate maps.rou.xml menjadi 25 mobil (semua depart di t=0.00s).
 ```
 
 ---
 
-## 4. Pipeline Otomatis Impor Peta Baru (`import_map.py` / `import_map.sh`)
+## 4. Automated Map Import Pipeline (`import_map.py` / `import_map.sh`)
 
-Untuk mengganti peta simulasi dengan peta kota mana pun dari OpenStreetMap (`.osm`) dalam **1 langkah instan**, telah disediakan pipeline otomasi terpadu:
+To import any new urban area from OpenStreetMap (`.osm`) in a **single automated step**:
 
 ```bash
-# Sintaks umum:
-./import_map.sh <path_ke_file.osm> [jumlah_mobil_aktif]
+# General syntax:
+./import_map.sh <OSM_FILE> [ACTIVE_VEHICLES]
 
-# Contoh:
-./import_map.sh peta_jakarta.osm 30
+# Example:
+./import_map.sh new_city.osm 30
 ```
 
-### ⚙️ Detail Alur Kerja Pipeline:
-1. **Ekstraksi Jaringan Jalan (`netconvert`)**:
-   Menerapkan proyeksi UTM kartesius (`--proj.utm`) dan membersihkan geometri persimpangan (`--geometry.remove`, `--roundabouts.guess`, `--junctions.join`, `--tls.guess-signals`).
-2. **Kalkulasi Geometri & Pemosisian RSU**:
-   Mengekstrak `convBoundary` secara otomatis, menghitung luas wilayah ($km^2$), dan menetapkan titik pusat $(X_{center}, Y_{center})$.
-3. **Pembaruan Deklarasi NED & INI**:
-   - Menyesuaikan ukuran kanvas `@display("bgb=W,H")` pada `Scenario.ned`.
-   - Menggeser posisi RSU di `Scenario.ned` dan parameter `*.rsu[0].mobility.initialX` / `initialY` di `omnetpp.ini` tepat ke pusat kota baru.
-4. **Pembangkitan Trip Acak (`randomTrips.py`)**:
-   Memanggil `randomTrips.py` (yang terintegrasi dalam environment python SUMO) untuk menghasilkan ratusan pasangan rute asal-tujuan yang realistis.
-5. **Perutean Jalan Raya (`duarouter`)**:
-   Menghitung jalur terpendek (*shortest path Dijkstra*) di jaringan jalan dengan mengabaikan edge yang tidak terhubung.
-6. **Sinkronisasi & Normalisasi Armada**:
-   Memformat seluruh kendaraan agar berangkat serentak di $t=0{,}00\text{ s}$ dengan penomoran indeks berurutan (`0, 1, 2, ... N-1`).
-7. **Penyebaran Berkas**:
-   Menyinkronkan file output (`maps.net.xml`, `maps.rou.xml`, `maps.rou.all.xml`, `maps.sumocfg`) ke root dan `vanet_aodv/`. Simulasi OMNeT++ langsung siap dijalankan seketika.
+### ⚙️ Pipeline Execution Steps:
+1. **Road Network Extraction (`netconvert`)**:
+   Applies UTM cartesian projection (`--proj.utm`) and cleans junction geometries (`--geometry.remove`, `--roundabouts.guess`, `--junctions.join`, `--tls.guess-signals`).
+2. **Boundary & Centroid Calculation**:
+   Parses `convBoundary` to extract physical width and height ($km^2$) and computes the urban midpoint $(X_{center}, Y_{center})$.
+3. **NED & INI Synchronization**:
+   - Updates canvas boundaries `@display("bgb=W,H")` in `Scenario.ned`.
+   - Repositions the Road-Side Unit in `Scenario.ned` and updates `*.rsu[0].mobility.initialX` / `initialY` in `omnetpp.ini`.
+4. **Random Trip Generation (`randomTrips.py`)**:
+   Invokes SUMO's `randomTrips.py` to create valid origin-destination pairs.
+5. **Shortest-Path Routing (`duarouter`)**:
+   Computes valid Dijkstra paths across reachable road edges.
+6. **Fleet Normalization**:
+   Assigns contiguous integer IDs (`0, 1, 2, ... N-1`) and enforces simultaneous $t=0.00\text{s}$ departures.
+7. **File Deployment**:
+   Deploys `maps.net.xml`, `maps.rou.xml`, `maps.rou.all.xml`, and `maps.sumocfg` across both root and `vanet_aodv/`. The simulation is immediately runnable.
 
 ---
 
-## 5. Konfigurasi SUMO & TraCI Launcher
+## 5. SUMO & TraCI Configurations
 
-### A. Konfigurasi SUMO: `maps.sumocfg`
+### A. SUMO Master Configuration: `maps.sumocfg`
 ```xml
 <configuration>
     <input>
@@ -140,9 +125,9 @@ Untuk mengganti peta simulasi dengan peta kota mana pun dari OpenStreetMap (`.os
     </time>
 </configuration>
 ```
-- **`step-length = 0.1`**: Menyelaraskan langkah waktu fisik kendaraan SUMO ke resolusi $100\text{ ms}$, persis sesuai dengan interval update manajer Veins di OMNeT++.
+- **`step-length = 0.1`**: Synchronizes SUMO physics at $100\text{ ms}$ steps, matching OMNeT++'s TraCI update interval.
 
-### B. Konfigurasi TraCI: `vanet_aodv/maps.launchd.xml`
+### B. TraCI Launcher: `vanet_aodv/maps.launchd.xml`
 ```xml
 <launch>
     <copy file="maps.net.xml"/>
@@ -150,4 +135,4 @@ Untuk mengganti peta simulasi dengan peta kota mana pun dari OpenStreetMap (`.os
     <copy file="maps.sumocfg"/>
 </launch>
 ```
-File ini memberi instruksi kepada `veins_launchd` untuk mengkopi berkas konfigurasi lalu lintas ke direktori sementara (*sandbox*) saat simulasi dijalankan.
+Instructs `veins_launchd` to mirror network and route definitions into its execution sandbox.

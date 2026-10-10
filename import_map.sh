@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# import_map.sh - Script Otomasi Import Peta .osm ke Simulasi VANET-AODV
+# import_map.sh - Automated OSM Map Import Script for VANET-AODV
 # ==============================================================================
 
 set -e
@@ -11,5 +11,5 @@ cd "${SCRIPT_DIR}"
 OSM_FILE="${1:-map.osm}"
 CARS="${2:-20}"
 
-echo "[*] Menjalankan konversi peta dari: ${OSM_FILE}..."
+echo "[*] Running automated map import from: ${OSM_FILE}..."
 exec python3 "${SCRIPT_DIR}/import_map.py" "${OSM_FILE}" --cars "${CARS}" "${@:3}"

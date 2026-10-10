@@ -1,95 +1,96 @@
-# 🧭 Protokol Routing AODV (RFC 3561)
+# 🧭 AODV Routing Protocol (RFC 3561)
 
-Dokumen ini membedah mekanisme kerja protokol **Ad hoc On-Demand Distance Vector (AODV)** sesuai standar **RFC 3561**, penerapannya dalam lingkungan mobilitas kendaraan tinggi (*VANET*), serta parameter-parameter konfigurasinya pada INET Framework.
-
----
-
-## 1. Konsep Dasar AODV
-
-AODV adalah protokol routing **reaktif (on-demand)**. Berbeda dengan protokol proaktif (seperti OLSR atau DSDV) yang terus-menerus memelihara seluruh rute ke setiap tujuan melalui pesan pertukaran topologi periodik, AODV **hanya mencari rute saat ada paket aplikasi yang hendak dikirim**.
-
-Karakteristik reaktif ini sangat menguntungkan di lingkungan VANET karena:
-1. **Topologi Sangat Dinamis**: Kecepatan tinggi mobil menyebabkan rute cepat kedaluwarsa (*stale*). Memelihara rute ke semua mobil secara proaktif akan membuang-buang bandwidth frekuensi 5.9 GHz.
-2. **Efisiensi Bandwidth**: Mengurangi *overhead* transmisi kontrol jika komunikasi hanya terjadi sesekali antar kendaraan tertentu.
-3. **Bebas Perulangan (*Loop-Free*)**: Menjamin tidak terjadi *routing loop* berkat pemanfaatan **Destination Sequence Number (DestSeqNum)**.
+This document details the mechanics of the **Ad hoc On-Demand Distance Vector (AODV)** routing protocol according to **RFC 3561**, its behavior in highly dynamic vehicular environments (*VANETs*), and its parameter configurations in INET Framework.
 
 ---
 
-## 2. Siklus Hidup Rute AODV
+## 1. Fundamentals of AODV in VANET
+
+AODV is a **reactive (on-demand)** routing protocol. Unlike proactive protocols (such as OLSR or DSDV) that continuously maintain fresh paths to every destination in the network via periodic topology broadcasts, AODV **initiates route discovery only when an application needs to transmit data**.
+
+This reactive paradigm is particularly suited for VANETs because:
+1. **High Topology Dynamics**: High vehicle velocities cause links to break and expire quickly. Proactively maintaining complete network paths wastes significant 5.9 GHz bandwidth.
+2. **Bandwidth Conservation**: Control message overhead remains minimal when data transmission occurs only between specific pairs or clusters of vehicles.
+3. **Loop-Free Operation**: Destination Sequence Numbers (**DestSeqNum**) strictly prevent routing loops and guarantee fresh route selection.
+
+---
+
+## 2. AODV Route Lifecycle
 
 ```
-               [Fase 1: ROUTE DISCOVERY]
-  Sumber (Src) ─── RREQ Broadcast (Multi-Hop) ───► Tujuan (Dst)
-  Sumber (Src) ◄─── RREP Unicast (Reverse Path) ── Tujuan (Dst)
+               [Phase 1: ROUTE DISCOVERY]
+  Source (Src) ─── RREQ Broadcast (Multi-Hop) ───► Destination (Dst)
+  Source (Src) ◄─── RREP Unicast (Reverse Path) ── Destination (Dst)
 
-               [Fase 2: TRANSMISI DATA]
-  Sumber (Src) ═══════════ Paket Data ═══════════► Tujuan (Dst)
+               [Phase 2: DATA TRANSMISSION]
+  Source (Src) ════════════ Data Packets ════════► Destination (Dst)
 
-               [Fase 3: ROUTE MAINTENANCE]
-  (Node putus akibat mobilitas menjauh)
-  Forwarder ────── RERR (Route Error) ───────────► Sumber (Src)
+               [Phase 3: ROUTE MAINTENANCE]
+  (Link breaks due to vehicle motion)
+  Forwarder ────── RERR (Route Error) ───────────► Source (Src)
 ```
 
 ---
 
-### A. Penemuan Rute (*Route Discovery*)
+### A. Route Discovery Mechanism
 
-Ketika sebuah node sumber (misal `node[0]`) ingin mengirim data ke node tujuan (`node[1]`), namun tidak memiliki entri rute yang valid di tabel routing-nya:
+When a source node (e.g., `node[0]`) needs to send packets to a destination (`node[1]`) but does not possess a valid routing entry:
 
-1. **Pembuatan RREQ (Route Request)**:
-   - Node sumber membuat paket `RREQ` yang berisi:
+1. **RREQ Generation**:
+   - The source creates a `RREQ` (Route Request) packet containing:
      - `Source IP` & `Source Sequence Number`
-     - `Broadcast ID` (dinaikkan setiap kali membuat RREQ baru)
+     - `Broadcast ID` (incremented for each new RREQ)
      - `Destination IP` & `Last Known Destination Sequence Number`
      - `Hop Count = 0`
-   - Paket RREQ disiarkan (*broadcast*) ke seluruh tetangga dalam radius jangkauan 1-hop.
+   - The RREQ packet is broadcasted to all 1-hop physical neighbors within range.
 
-2. **Pembentukan Reverse Path (Jalur Balik)**:
-   - Setiap node tetangga yang menerima RREQ memeriksa pasangan `(Source IP, Broadcast ID)`. Jika sudah pernah diproses, paket diabaikan (*discard duplicate*).
-   - Node pencatat membuat entri **Reverse Path** di tabel routing-nya: mencatat alamat pengirim hop sebelumnya sebagai jalur untuk kembali ke sumber.
-   - Hop Count dinaikkan 1. Jika node tersebut bukan tujuan dan tidak memiliki rute segar ke tujuan, ia menyiarkan ulang (*re-broadcast*) paket RREQ tersebut.
+2. **Reverse Path Setup**:
+   - Each intermediate neighbor receiving the RREQ checks the tuple `(Source IP, Broadcast ID)`. Duplicate packets are immediately discarded.
+   - The node establishes a **Reverse Path** entry in its routing table, recording the previous hop neighbor as the path back to the source.
+   - The Hop Count is incremented by 1. If the node is not the destination and does not have a fresh route to the destination, it rebroadcasts the RREQ.
 
-3. **Pembuatan RREP (Route Reply)**:
-   - Ketika RREQ tiba di tujuan (`node[1]`), tujuan menaikkan `Destination Sequence Number` miliknya.
-   - Node tujuan membuat paket `RREP` dan mengirimkannya secara **unicast** menyusuri *Reverse Path* yang telah terbentuk.
-   - Setiap node perantara yang meneruskan RREP membentuk entri **Forward Path** menuju tujuan di tabel routing-nya.
-   - Begitu RREP tiba di sumber, transmisi paket data aplikasi langsung dimulai.
+3. **RREP Generation & Forward Path Setup**:
+   - When the RREQ arrives at the destination (`node[1]`), the destination increments its own sequence number.
+   - The destination generates a `RREP` (Route Reply) packet and transmits it **unicast** along the Reverse Path.
+   - Intermediate forwarders process the RREP and establish a **Forward Path** toward the destination.
+   - Upon receiving the RREP at the source, packet buffering ends and data transmission begins immediately.
 
 ---
 
-### B. Mekanisme Expanding Ring Search
+### B. Expanding Ring Search Algorithm
 
-Untuk mencegah banjir paket RREQ ke seluruh jaringan kota jika tujuan ternyata berada dekat dengan sumber, AODV menerapkan algoritma **Expanding Ring Search**:
+To prevent broadcast flooding across the entire city when the destination is physically close to the source, AODV employs **Expanding Ring Search**:
 
-1. AODV memulai siaran RREQ pertama dengan nilai TTL (*Time To Live*) kecil:
+1. AODV broadcasts the initial RREQ with a small Time-To-Live (TTL):
    $$\text{TTL}_{start} = 2$$
-2. Jika balasan RREP tidak diterima dalam jendela waktu tertentu, TTL dinaikkan secara bertahap:
+2. If no RREP is received within the discovery timeout window, TTL is incrementally increased:
    $$\text{TTL}_{next} = \text{TTL}_{prev} + \text{TTL}_{increment} \quad (\text{TTL}_{increment} = 2)$$
-3. Proses berulang hingga mencapai batas ambang:
+3. This process repeats until the threshold is reached:
    $$\text{TTL}_{threshold} = 7$$
-4. Jika masih belum ditemukan rute pada $\text{TTL}_{threshold}$, RREQ disiarkan ke seluruh diameter jaringan:
+4. If no route is found at $\text{TTL}_{threshold}$, a full network broadcast is executed:
    $$\text{TTL} = \text{NetDiameter} = 30$$
 
 ---
 
-### C. Pemeliharaan Rute (*Route Maintenance & Error Handling*)
+### C. Route Maintenance & Error Handling
 
-Tantangan terbesar VANET adalah tingginya mobilitas mobil yang menyebabkan *link breakage* (putusnya sambungan antar mobil yang saling menjauh keluar dari radius jangkauan).
+Vehicular mobility continuously breaks communication links when cars move apart or turn at intersections.
 
-1. **Deteksi Link Putus**:
-   - Terdeteksi ketika transmisi frame MAC 802.11p gagal menerima sinyal ACK setelah mencapai batas maksimum *retry*.
-   - Atau (jika diaktifkan) terdeteksi saat tidak menerima paket *AODV HELLO* dari tetangga selama batas waktu tertentu.
-2. **Penyebaran Pesan RERR (Route Error)**:
-   - Node yang mendeteksi putusnya sambungan menandai entri rute sebagai *invalid*.
-   - Node tersebut mengirimkan paket `RERR` yang berisi daftar IP tujuan yang tidak lagi dapat dijangkau ke seluruh node perantara sebelumnya (*precursor list*).
-3. **Perbaikan Rute (Local Repair / Re-discovery)**:
-   - Node sumber yang menerima RERR membatalkan rute lama dan dapat memulai inisiasi *Route Discovery* baru.
+1. **Link Breakage Detection**:
+   - Detected when IEEE 802.11p MAC frame transmissions fail to receive an ACK after maximum retry attempts.
+   - Alternatively (if enabled), detected when expected periodic *AODV HELLO* messages are missed from a neighboring node.
+2. **RERR Dissemination**:
+   - The node that detects the link failure marks the affected routing entries as invalid.
+   - It issues a `RERR` (Route Error) message listing unreachable destinations to all upstream *precursor* nodes that utilize this link.
+3. **Route Recovery**:
+   - Upstream nodes forward the RERR back to the source.
+   - The source can initiate a new *Route Discovery* sequence to find an alternative active path.
 
 ---
 
-## 3. Fitur Pesan HELLO (RFC 3561) vs Link Layer Feedback
+## 3. RFC 3561 HELLO Messages vs MAC Layer Feedback
 
-Pada berkas `omnetpp.ini`, terdapat skenario khusus `[Config AODV_HelloMessages]` untuk menguji dampak fitur pesan periodik HELLO:
+The scenario `[Config AODV_HelloMessages]` evaluates the trade-offs of enabling periodic HELLO beacons:
 
 ```ini
 [Config AODV_HelloMessages]
@@ -100,18 +101,18 @@ extends = AODV_V2V_UDP
 **.aodv.activeRouteTimeout = 3s
 ```
 
-| Parameter Perbandingan | Tanpa Hello Messages (Default `omnetpp.ini`) | Dengan Hello Messages (`AODV_HelloMessages`) |
+| Parameter Comparison | Without Hello Messages (Default `omnetpp.ini`) | With Hello Messages (`AODV_HelloMessages`) |
 |---|---|---|
-| **Metode Deteksi Tetangga** | Mengandalkan *MAC layer acknowledgment* (802.11p ACK failure). | Siaran berkala paket kontrol HELLO setiap $1\text{ detik}$. |
-| **Beban Kanal (*Channel Overhead*)** | Sangat rendah. Kanal nirkabel hanya terpakai saat ada trafik data nyata. | Bertambah secara proporsional terhadap jumlah kendaraan aktif di jalan. |
-| **Kecepatan Deteksi Putus** | Sangat cepat saat sedang aktif mengirimkan paket data. | Bergantung pada interval: $2 \times \text{helloInterval} = 2\text{ detik}$. |
-| **Rekomendasi di Lingkungan VANET** | Dianjurkan untuk jaringan padat agar spektrum radio tidak jenuh oleh siaran kontrol. | Bermanfaat untuk evaluasi riset *neighbor sensing* dan pemantauan topologi. |
+| **Neighbor Sensing Mechanism** | Uses MAC layer feedback (802.11p ACK failure). | Periodic broadcast of HELLO packets every $1\text{ second}$. |
+| **Channel Overhead** | Very low. Wireless spectrum is utilized only when active user data is transmitted. | Scales linearly with the number of active vehicles in the area. |
+| **Failure Detection Speed** | Instantaneous during active data flow. | Governed by timeout: $2 \times \text{helloInterval} = 2\text{ seconds}$. |
+| **Recommendation in Dense VANET** | Strongly recommended to prevent spectrum saturation. | Useful for research benchmarking of proactive neighbor monitoring. |
 
 ---
 
-## 4. Rangkuman Parameter Konfigurasi AODV di INET
+## 4. AODV INET Configuration Parameters
 
-Berikut adalah parameter implementasi AODV pada proyek ini yang tertuang di `vanet_aodv/omnetpp.ini`:
+Below are the primary AODV parameters configured in `vanet_aodv/omnetpp.ini`:
 
 ```ini
 ##########################################################
@@ -132,8 +133,8 @@ Berikut adalah parameter implementasi AODV pada proyek ini yang tertuang di `van
 **.aodv.nodeTraversalTime = 0.05s
 ```
 
-### Arti Fungsional Parameter:
-- **`activeRouteTimeout = 3s`**: Masa kedaluwarsa rute aktif. Jika sebuah rute tidak dilalui paket data selama 3 detik, rute dinyatakan tidak aktif (*expired*). Mengingat kendaraan bergerak cepat, nilai 3 detik ideal mencegah penggunaan rute lapuk.
-- **`rreqRetries = 3`**: Jumlah percobaan ulang siaran RREQ sebelum menyatakan tujuan tidak dapat dihubungi.
-- **`rreqRatelimit = 20`**: Pembatasan laju pengiriman paket RREQ maksimal 20 paket per detik untuk mencegah *broadcast storm problem*.
-- **`nodeTraversalTime = 0.05s`**: Estimasi konservatif waktu perambatan paket melintasi 1 hop node ($50\text{ ms}$), digunakan untuk mengkalkulasi waktu tunggu timeout balasan RREP.
+### Parameter Reference:
+- **`activeRouteTimeout = 3s`**: Route entry validity duration. If no data passes through an active route for 3 seconds, it is marked expired. Given typical vehicle speeds, 3 seconds prevents stale routing loops.
+- **`rreqRetries = 3`**: Maximum RREQ broadcast attempts before declaring a destination unreachable.
+- **`rreqRatelimit = 20`**: Limits RREQ broadcasts to 20 packets per second to mitigate broadcast storm problems.
+- **`nodeTraversalTime = 0.05s`**: Conservative single-hop propagation estimate ($50\text{ ms}$) used to compute RREP waiting timeouts.

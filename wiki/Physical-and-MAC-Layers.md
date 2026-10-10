@@ -1,23 +1,23 @@
-# 📡 Lapisan Fisik & MAC (IEEE 802.11p)
+# 📡 Physical & MAC Layers (IEEE 802.11p)
 
-Dokumen ini menguraikan pemodelan lapisan fisik (*Physical Layer*) dan sublapisan kendali akses media (*MAC Layer*) berbasis standar vehicular **IEEE 802.11p (WAVE / DSRC)** serta turunan matematis dari formula jangkauan propagasi radio.
-
----
-
-## 1. Standar Nirkabel IEEE 802.11p (DSRC)
-
-Standar IEEE 802.11p merupakan amandemen khusus dari IEEE 802.11 yang dirancang khusus untuk komunikasi di lingkungan transportasi bergerak berkecepatan tinggi:
-
-- **Pita Frekuensi**: DSRC dialokasikan pada spektrum $5{,}850\text{ GHz} - 5{,}925\text{ GHz}$ ($5{,}9\text{ GHz}$).
-- **Lebar Saluran (*Channel Bandwidth*)**: Menggunakan lebar pita sempit **$10\text{ MHz}$** (setengah dari pita WiFi biasa $20\text{ MHz}$) untuk mengurangi *Doppler spread* dan distorsi *multipath delay spread*.
-- **Modulasi & Physical Layer**: Menggunakan OFDM (*Orthogonal Frequency Division Multiplexing*) dengan 52 sub-pembawa (*subcarriers*).
-- **Mekanisme Akses Kanal**: CSMA/CA (*Carrier Sense Multiple Access with Collision Avoidance*) dengan prioritas EDCA (*Enhanced Distributed Channel Access*).
+This document describes the modeling of the Physical Layer and Medium Access Control (MAC) layer based on the **IEEE 802.11p (WAVE / DSRC)** standard, including mathematical derivations of radio propagation formulas.
 
 ---
 
-## 2. Pemodelan Radio di INET Framework
+## 1. IEEE 802.11p DSRC Wireless Standard
 
-Pada `vanet_aodv/omnetpp.ini`, lapisan fisik dikonfigurasi menggunakan modul **`Ieee80211DimensionalRadio`** dan **`Ieee80211DimensionalRadioMedium`**:
+The IEEE 802.11p amendment is tailored for communications in vehicular environments characterized by rapid mobility and multipath fading:
+
+- **Frequency Spectrum**: Dedicated Short-Range Communications (DSRC) band operating between $5.850\text{ GHz} - 5.925\text{ GHz}$ ($5.9\text{ GHz}$).
+- **Channel Bandwidth**: Narrow **$10\text{ MHz}$** channels (half of standard $20\text{ MHz}$ Wi-Fi) to mitigate Doppler spread and delay spread distortion.
+- **Physical Modulation**: Orthogonal Frequency Division Multiplexing (OFDM) utilizing 52 active subcarriers.
+- **Medium Access**: Carrier Sense Multiple Access with Collision Avoidance (CSMA/CA) supported by Enhanced Distributed Channel Access (EDCA) QoS prioritization.
+
+---
+
+## 2. INET Radio Configuration
+
+In `vanet_aodv/omnetpp.ini`, the physical layer is instantiated via **`Ieee80211DimensionalRadio`** and **`Ieee80211DimensionalRadioMedium`**:
 
 ```ini
 ##########################################################
@@ -37,104 +37,104 @@ Pada `vanet_aodv/omnetpp.ini`, lapisan fisik dikonfigurasi menggunakan modul **`
 *.node[*].wlan[0].radio.bandwidth = 10 MHz
 *.node[*].wlan[0].radio.transmitter.power = 10mW
 
-# Penempatan Posisi Fisik Antena pada Bodi Kendaraan
+# Physical Antenna Placement on Vehicle Roof
 *.node[*].wlan[*].radio.antenna.mobility.typename = "AttachedMobility"
 *.node[*].wlan[*].radio.antenna.mobility.mobilityModule = "^.^.^.^.mobility"
 *.node[*].wlan[*].radio.antenna.mobility.offsetX = -2.5m
 *.node[*].wlan[*].radio.antenna.mobility.offsetZ = 1.5m
 ```
 
-### Parameter Kunci Antena & Lingkungan:
-- **`backgroundNoise.power = -110dBm`**: Memodelkan desah termal lingkungan (*thermal noise floor*) pada temperatur ruang $290\text{ K}$ dengan bandwidth $10\text{ MHz}$.
-- **`antenna.mobility.offsetZ = 1.5m`**: Antena ditempatkan pada ketinggian $1{,}5\text{ meter}$ di atas permukaan tanah (posisi realistis atap mobil sedan).
-- **`antenna.mobility.offsetX = -2.5m`**: Posisi antena digeser ke arah tengah atap kendaraan sesuai dimensi kendaraan SUMO.
+### Physical Parameters:
+- **`backgroundNoise.power = -110dBm`**: Models the thermal noise floor for a $10\text{ MHz}$ channel at ambient temperature $290\text{ K}$.
+- **`antenna.mobility.offsetZ = 1.5m`**: Mounts the antenna $1.5\text{ meters}$ above ground (realistic sedan roof level).
+- **`antenna.mobility.offsetX = -2.5m`**: Offsets antenna positioning toward vehicle center-roof according to SUMO vehicle dimensions.
 
 ---
 
-## 3. Penurunan Matematis Jangkauan Radio (Range Derivation)
+## 3. Mathematical Derivation of Communication Range
 
-Batas jangkauan komunikasi (*Communication Range*) antara pemancar ($Tx$) dan penerima ($Rx$) dihitung berdasarkan model redaman ruang bebas (*Friis Transmission Equation*).
+The maximum physical communication range ($d_{max}$) between transmitter ($Tx$) and receiver ($Rx$) is derived using the Friis Free-Space Transmission formula.
 
-### A. Persamaan Transmisi Friis
+### A. Friis Transmission Equation
 
-Daya terima ($P_{rx}$) pada jarak pemisah $d$ dinyatakan sebagai:
+The received power ($P_{rx}$) at distance $d$ is given by:
 
 $$P_{rx} = P_{tx} \cdot G_{tx} \cdot G_{rx} \cdot \left(\frac{\lambda}{4\pi d}\right)^2$$
 
-Dengan mengasumsikan antena isotropik tanpa penguatan terarah ($G_{tx} = 1, G_{rx} = 1$):
+Assuming isotropic unity-gain antennas ($G_{tx} = 1, G_{rx} = 1$):
 
 $$P_{rx} = P_{tx} \cdot \left(\frac{\lambda}{4\pi d}\right)^2$$
 
-Di mana:
-- $c = 299.792.458\text{ m/s} \approx 3 \times 10^8\text{ m/s}$ (kecepatan cahaya)
-- $f = 5{,}9\text{ GHz} = 5{,}9 \times 10^9\text{ Hz}$
-- Panjang gelombang DSRC $\lambda$:
-  $$\lambda = \frac{c}{f} = \frac{3 \times 10^8\text{ m/s}}{5{,}9 \times 10^9\text{ Hz}} \approx 0{,}0508136\text{ meter} \approx 5{,}08\text{ cm}$$
+Where:
+- $c = 299,792,458\text{ m/s} \approx 3 \times 10^8\text{ m/s}$ (speed of light)
+- $f = 5.9\text{ GHz} = 5.9 \times 10^9\text{ Hz}$
+- Wavelength $\lambda$:
+  $$\lambda = \frac{c}{f} = \frac{3 \times 10^8\text{ m/s}}{5.9 \times 10^9\text{ Hz}} \approx 0.0508136\text{ m} \approx 5.08\text{ cm}$$
 
 ---
 
-### B. Menentukan Jarak Maksimum ($d_{max}$)
+### B. Determining Maximum Distance ($d_{max}$)
 
-Penerima dapat mendekode sinyal jika daya terima tidak lebih kecil dari batas ambang sensitivitas modulasi radio ($P_{rx} \ge P_{rx\_min}$):
+A frame can be demodulated if the received signal meets or exceeds receiver sensitivity ($P_{rx} \ge P_{rx\_min}$):
 
 $$P_{rx\_min} = P_{tx} \cdot \left(\frac{\lambda}{4\pi d_{max}}\right)^2$$
 
-Membagi kedua sisi dengan $P_{tx}$:
+Dividing both sides by $P_{tx}$:
 
 $$\frac{P_{rx\_min}}{P_{tx}} = \left(\frac{\lambda}{4\pi d_{max}}\right)^2$$
 
-Mengambil akar kuadrat pada kedua sisi:
+Taking square roots:
 
 $$\sqrt{\frac{P_{rx\_min}}{P_{tx}}} = \frac{\lambda}{4\pi d_{max}}$$
 
-Menyelesaikan untuk $d_{max}$:
+Solving for $d_{max}$:
 
 $$\mathbf{d_{max} = \frac{\lambda}{4\pi} \cdot \sqrt{\frac{P_{tx}}{P_{rx\_min}}} = \frac{c}{4\pi f} \cdot \sqrt{\frac{P_{tx}}{P_{rx\_min}}}}$$
 
 ---
 
-### C. Pembuktian Numerik dengan Parameter Simulasi
+### C. Numerical Calculation with Configured Parameters
 
-Dalam konfigurasi standar INET:
-- Daya pancar kendaraan: $P_{tx} = 10\text{ mW} = 0{,}01\text{ Watt}$ ($+10\text{ dBm}$)
-- Ambang sensitivitas: $P_{rx\_min} = -85\text{ dBm} = 10^{\frac{-85}{10}}\text{ mW} = 10^{-8{,}5}\text{ mW} \approx 3{,}16228 \times 10^{-12}\text{ Watt}$
+Using values from `vanet_aodv/omnetpp.ini`:
+- Vehicle transmission power: $P_{tx} = 10\text{ mW} = 0.01\text{ W}$ ($+10\text{ dBm}$)
+- Sensitivity threshold: $P_{rx\_min} = -85\text{ dBm} = 10^{\frac{-85}{10}}\text{ mW} \approx 3.16228 \times 10^{-12}\text{ W}$
 
-Menghitung rasio daya:
-$$\frac{P_{tx}}{P_{rx\_min}} = \frac{10^{-2}\text{ W}}{3{,}16228 \times 10^{-12}\text{ W}} \approx 3{,}16228 \times 10^9$$
+Computing power ratio:
+$$\frac{P_{tx}}{P_{rx\_min}} = \frac{10^{-2}\text{ W}}{3.16228 \times 10^{-12}\text{ W}} \approx 3.16228 \times 10^9$$
 
-$$\sqrt{\frac{P_{tx}}{P_{rx\_min}}} = \sqrt{3{,}16228 \times 10^9} \approx 56.234{,}13$$
+$$\sqrt{\frac{P_{tx}}{P_{rx\_min}}} \approx 56,234.13$$
 
-Menghitung konstanta skala ruang bebas:
-$$\frac{\lambda}{4\pi} = \frac{0{,}0508136}{4 \times 3{,}14159265} \approx 0{,}0040436\text{ meter}$$
+Scaling factor:
+$$\frac{\lambda}{4\pi} = \frac{0.0508136}{4\pi} \approx 0.0040436\text{ m}$$
 
-Mengalikan keduanya:
-$$d_{max} = 0{,}0040436 \times 56.234{,}13 \approx \mathbf{226{,}7\text{ meter}} \approx \mathbf{227\text{ meter}}$$
+Multiplying terms:
+$$d_{max} = 0.0040436 \times 56,234.13 \approx \mathbf{226.7\text{ meters}} \approx \mathbf{227\text{ meters}}$$
 
-Maka pada daya pancar $10\text{ mW}$, jangkauan lingkaran fisik mobil adalah tepat **$\approx 227\text{ meter}$**.
+Thus, under standard 10mW transmission power, the effective physical communication range is **$\approx 227\text{ meters}$**.
 
 ---
 
-## 4. Tabel Lookup Variasi Daya vs Radius Jangkauan
+## 4. Transmission Power vs Range Lookup Table
 
-Berdasarkan formula di atas, berikut adalah tabel radius jangkauan efektif pada frekuensi $5{,}9\text{ GHz}$ dan sensitivitas $-85\text{ dBm}$:
+Based on this derivation at $5.9\text{ GHz}$ with $-85\text{ dBm}$ sensitivity:
 
-| Daya Pemancar ($P_{tx}$) | Nilai dalam dBm | Radius Jangkauan Teoretis ($d_{max}$) | Rekomendasi Kasus Uji |
+| Transmitter Power ($P_{tx}$) | Power in dBm | Theoretical Communication Range ($d_{max}$) | Typical Context |
 |:---:|:---:|:---:|---|
-| **$2\text{ mW}$** | $+3\text{ dBm}$ | $\approx \mathbf{101\text{ meter}}$ | Kepadatan mobil sangat tinggi (mencegah tabrakan paket) |
-| **$5\text{ mW}$** | $+7\text{ dBm}$ | $\approx \mathbf{160\text{ meter}}$ | Lingkungan urban gang sempit / perkantoran |
-| **$10\text{ mW}$** *(Default)* | $+10\text{ dBm}$ | $\approx \mathbf{227\text{ meter}}$ | **Standar industri DSRC V2V pada jalan raya kota** |
-| **$50\text{ mW}$** | $+17\text{ dBm}$ | $\approx \mathbf{508\text{ meter}}$ | Kendaraan prioritas (Ambulans, Pemadam Kebakaran) |
-| **$100\text{ mW}$** *(RSU)* | $+20\text{ dBm}$ | $\approx \mathbf{718\text{ meter}}$ | **Infrastruktur persimpangan (Road-Side Unit gateway)** |
+| **$2\text{ mW}$** | $+3\text{ dBm}$ | $\approx \mathbf{101\text{ m}}$ | Very dense traffic (mitigates packet collisions) |
+| **$5\text{ mW}$** | $+7\text{ dBm}$ | $\approx \mathbf{160\text{ m}}$ | Dense urban grid with short street links |
+| **$10\text{ mW}$** *(Default)* | $+10\text{ dBm}$ | $\approx \mathbf{227\text{ m}}$ | **Standard DSRC V2V suburban/urban baseline** |
+| **$50\text{ mW}$** | $+17\text{ dBm}$ | $\approx \mathbf{508\text{ m}}$ | Priority vehicles (Emergency, Police, Transit) |
+| **$100\text{ mW}$** *(RSU)* | $+20\text{ dBm}$ | $\approx \mathbf{718\text{ m}}$ | **Road-Side Units & Intersection Gateways** |
 
 ---
 
-## 5. Mengapa Diperlukan Pengaturan `centerFrequency`?
+## 5. Significance of `centerFrequency = 5.9 GHz`
 
-Secara default, jika parameter tidak dideklarasikan, submodul `mediumLimitCache` pada INET Framework akan mengasumsikan frekuensi kerja pada frekuensi WiFi standar ($2{,}4\text{ GHz}$).
-Pada $2{,}4\text{ GHz}$, panjang gelombangnya jauh lebih panjang ($\lambda \approx 12{,}5\text{ cm}$), sehingga rumus menghasilkan radius lingkaran palsu sebesar $\approx 560\text{ meter}$.
+In INET Framework, if `centerFrequency` is omitted from `mediumLimitCache`, the radio medium defaults to $2.4\text{ GHz}$ (standard Wi-Fi).
+At $2.4\text{ GHz}$, the wavelength is significantly longer ($\lambda \approx 12.5\text{ cm}$), which produces an incorrect, overly large theoretical range of $\approx 560\text{ meters}$.
 
-Oleh karena itu, baris berikut **wajib diaktifkan** di `omnetpp.ini`:
+Explicitly setting:
 ```ini
 *.radioMedium.mediumLimitCache.centerFrequency = 5.9 GHz
 ```
-Dengan parameter ini, INET menghitung redaman gelombang dan merender lingkaran visual jangkauan dengan akurasi fisik penuh sesuai karakteristik DSRC 5.9 GHz.
+ensures that path loss models, limit cache cutoffs, and visual circle ranges strictly adhere to physical 5.9 GHz DSRC propagation.

@@ -7,7 +7,7 @@ import inet.environment.common.PhysicalEnvironment;
 import org.car2x.veins.visualizer.roads.RoadsCanvasVisualizer;
 
 //
-// Topologi Jaringan Skenario VANET dengan Routing Protokol AODV
+// Top-Level VANET Network Scenario Topology with AODV Routing Protocol
 //
 network Scenario
 {

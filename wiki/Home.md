@@ -1,63 +1,63 @@
 # 📚 VANET-AODV Simulation Wiki
 
-Selamat datang di dokumentasi resmi (**Wiki**) proyek **VANET-AODV**. Wiki ini berisi panduan teknis mendalam mengenai arsitektur, konfigurasi protokol, teori perambatan radio, manajemen lalu lintas mobilitas, hingga teknik analisis data simulasi.
+Welcome to the official documentation portal (**Wiki**) for the **VANET-AODV** simulation testbed. This wiki provides comprehensive technical references covering system architecture, routing protocols, physical radio propagation, vehicular traffic mobility, and simulation data analysis.
 
 ---
 
-## 🧭 Navigasi Wiki
+## 🧭 Wiki Navigation
 
-| Dokumen | Topik & Cakupan |
+| Document | Topic & Scope |
 |---|---|
-| [**1. Arsitektur & Desain Sistem**](Architecture-and-Design.md) | Integrasi 4 komponen simulator (OMNeT++, INET, Veins, SUMO), hierarki modul NED (`Scenario`, `VeinsAodvCar`, `VeinsAodvRSU`), dan protokol TraCI. |
-| [**2. Protokol Routing AODV**](Routing-Protocol-AODV.md) | Mekanisme RFC 3561 dalam lingkungan vehicular (RREQ, RREP, RERR, Gratuitous RREP, Expanding Ring Search, serta HELLO Messages). |
-| [**3. Lapisan Fisik & MAC (IEEE 802.11p)**](Physical-and-MAC-Layers.md) | Frekuensi DSRC 5.9 GHz, modulasi OFDM, model redaman *Free-Space Path Loss*, kalkulasi radius transmisi, dan konfigurasi antena. |
-| [**4. Mobilitas Lalu Lintas & Peta Jalan**](Traffic-Mobility-and-Map.md) | Ekstraksi OpenStreetMap, sistem koordinat UTM, file rute SUMO (`maps.rou.xml`), serta skrip otomasi skala kendaraan `set_nodes.py`. |
-| [**5. Panduan Skenario Simulasi**](Simulation-Scenarios.md) | Penjelasan teknis mendalam 4 skenario benchmark (`AODV_V2V_Ping`, `AODV_V2V_UDP`, `AODV_V2I_RSU`, dan `AODV_HelloMessages`). |
-| [**6. Panduan Visualisasi Grafis (Qtenv)**](GUI-and-Visualization-Guide.md) | Arti semantik visual: lingkaran jangkauan radio (biru), link MAC 1-hop (emas), rute AODV (hijau), dan filter rambatan gelombang imajiner. |
-| [**7. Analisis Data & Metrik Evaluasi**](Data-Analysis-and-Metrics.md) | Metrik performa jaringan (PDR, Latensi RTT, Throughput, Routing Overhead), ekstraksi data skalar (`.sca`) dan vektor (`.vec`). |
-| [**8. Panduan Eksekusi & Troubleshooting**](Getting-Started-and-Troubleshooting.md) | Instalasi dependensi, eksekusi mode terminal/GUI, dan solusi terhadap kendala teknis umum. |
+| [**1. Architecture & Design**](Architecture-and-Design.md) | Quad-simulator integration (OMNeT++, INET, Veins, SUMO), NED module hierarchy (`Scenario`, `VeinsAodvCar`, `VeinsAodvRSU`), and TraCI synchronization loop. |
+| [**2. AODV Routing Protocol**](Routing-Protocol-AODV.md) | RFC 3561 mechanisms in vehicular networks (RREQ broadcast, RREP unicast, RERR route errors, Expanding Ring Search, and HELLO messages). |
+| [**3. Physical & MAC Layers (IEEE 802.11p)**](Physical-and-MAC-Layers.md) | DSRC 5.9 GHz spectrum, OFDM modulation, Free-Space Path Loss derivation, transmission radius calculation, and antenna offsets. |
+| [**4. Traffic Mobility & Road Map**](Traffic-Mobility-and-Map.md) | OpenStreetMap processing, UTM cartesian coordinates, route definitions (`maps.rou.xml`), `set_nodes.py`, and the `import_map.sh` pipeline. |
+| [**5. Simulation Scenarios Guide**](Simulation-Scenarios.md) | In-depth parameters and behaviors of the 4 benchmark scenarios (`AODV_V2V_Ping`, `AODV_V2V_UDP`, `AODV_V2I_RSU`, and `AODV_HelloMessages`). |
+| [**6. GUI & Visualization Guide (Qtenv)**](GUI-and-Visualization-Guide.md) | Visual semantics: physical radio ranges (blue), 1-hop MAC links (gold), AODV routes (green), and propagation ray filtering. |
+| [**7. Data Analysis & Performance Metrics**](Data-Analysis-and-Metrics.md) | Network performance formulas (PDR, RTT latency, throughput, routing overhead), scalar (`.sca`) and vector (`.vec`) data extraction. |
+| [**8. Getting Started & Troubleshooting**](Getting-Started-and-Troubleshooting.md) | System requirements, execution instructions for CLI/GUI modes, and solutions to common errors. |
 
 ---
 
-## 🔍 Ikhtisar Ekosistem
+## 🔍 System Ecosystem Overview
 
-Proyek ini menggabungkan ekosistem perangkat lunak riset standar industri:
+This project unites industry-standard discrete-event and microscopic traffic simulation frameworks:
 
 ```
 +-------------------------------------------------------------------------+
 |                              Eclipse SUMO                               |
-|       (Simulasi Mikro Lalu Lintas: Rute, Kendaraan, Kecepatan, Lajur)   |
+|        (Microscopic Traffic Simulation: Routes, Speeds, Lanes)          |
 +-----------------------------------+-------------------------------------+
                                     | TraCI TCP Socket (:9999)
                                     v
 +-------------------------------------------------------------------------+
 |                                 Veins                                   |
-|      (Sinkronisasi Posisi Kendaraan + IEEE 802.11p WAVE Foundation)     |
+|   (Dynamic Vehicle Synchronization + IEEE 802.11p WAVE Foundation)      |
 +-----------------------------------+-------------------------------------+
                                     | VeinsInetMobility
                                     v
 +-------------------------------------------------------------------------+
 |                           INET Framework 4.5                            |
-|  - Lapisan Aplikasi   : PingApp, UdpBasicApp, UdpSink                   |
-|  - Lapisan Routing    : AODV Router (RFC 3561)                          |
-|  - Lapisan Network    : IPv4 Stack (10.0.0.0/8), Global ARP             |
-|  - Lapisan Link/MAC   : IEEE 802.11p NIC                                |
-|  - Lapisan Fisik      : Ieee80211DimensionalRadio (5.9 GHz DSRC)        |
+|  - Application Layer : PingApp, UdpBasicApp, UdpSink                    |
+|  - Routing Layer     : AODV Routing Engine (RFC 3561)                   |
+|  - Network Layer     : IPv4 Stack (10.0.0.0/8), Global ARP              |
+|  - Link/MAC Layer    : IEEE 802.11p NIC                                 |
+|  - Physical Layer    : Ieee80211DimensionalRadio (5.9 GHz DSRC)         |
 +-----------------------------------+-------------------------------------+
-                                    | Discrete Event Engine
+                                    | Discrete Event Kernel
                                     v
 +-------------------------------------------------------------------------+
 |                               OMNeT++ 6.4                               |
-|                   (Kernel Simulasi & Visualizer Qtenv)                  |
+|                  (Simulation Engine & Qtenv Visualizer)                 |
 +-------------------------------------------------------------------------+
 ```
 
 ---
 
-## 💡 Rekomendasi Alur Belajar
+## 💡 Recommended Reading Path
 
-1. Pelajari [Arsitektur & Desain Sistem](Architecture-and-Design.md) untuk memahami bagaimana OMNeT++ dan SUMO berkomunikasi.
-2. Pahami konsep [Protokol Routing AODV](Routing-Protocol-AODV.md) dan bagaimana mobilitas kendaraan mempengaruhi pemeliharaan rute.
-3. Telaah [Lapisan Fisik & MAC](Physical-and-MAC-Layers.md) untuk memahami perhitungan matematis jangkauan sinyal mobil.
-4. Pilih skenario pada [Panduan Skenario Simulasi](Simulation-Scenarios.md) dan jalankan menggunakan [Panduan Eksekusi](Getting-Started-and-Troubleshooting.md).
-5. Analisis metrik output simulasi menggunakan [Analisis Data & Metrik Evaluasi](Data-Analysis-and-Metrics.md).
+1. Review [Architecture & Design](Architecture-and-Design.md) to understand how OMNeT++ and SUMO synchronize in time.
+2. Study [AODV Routing Protocol](Routing-Protocol-AODV.md) to understand route discovery and maintenance dynamics under high mobility.
+3. Review [Physical & MAC Layers](Physical-and-MAC-Layers.md) for the mathematical calculations of transmission range.
+4. Select a scenario from the [Simulation Scenarios Guide](Simulation-Scenarios.md) and execute it following [Getting Started & Troubleshooting](Getting-Started-and-Troubleshooting.md).
+5. Extract and analyze simulation metrics using the [Data Analysis & Performance Metrics](Data-Analysis-and-Metrics.md) guide.

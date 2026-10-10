@@ -3,8 +3,8 @@ package vanet_aodv;
 import inet.node.aodv.AodvRouter;
 
 //
-// Road-Side Unit (RSU) / Node infrastruktur statis untuk skenario V2I (Vehicle-to-Infrastructure).
-// Bertindak sebagai server pengumpul data trafik / gateway darurat dengan protokol routing AODV.
+// Static Road-Side Unit (RSU) infrastructure node for V2I (Vehicle-to-Infrastructure) scenarios.
+// Operates as a central traffic telemetry collector / emergency gateway with AODV routing support.
 //
 module VeinsAodvRSU extends AodvRouter
 {

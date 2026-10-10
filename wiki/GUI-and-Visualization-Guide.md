@@ -1,28 +1,28 @@
-# 🎨 Panduan Visualisasi Grafis (GUI Qtenv)
+# 🎨 GUI & Visualization Guide (Qtenv)
 
-Dokumen ini menjelaskan konfigurasi dan interpretasi grafis pada simulator interaktif **Qtenv** (OMNeT++), fungsi masing-masing komponen visualizer, serta makna semantik dari garis dan lingkaran yang tampil di layar.
+This document explains the interactive visualization features of **Qtenv** (OMNeT++), the roles of individual visualizer components, and the physical semantics of rendered lines and circles.
 
 ---
 
-## 1. Konfigurasi Visualizer Terpusat (`[General]`)
+## 1. Global Visualizer Architecture (`[General]`)
 
-Pada berkas `vanet_aodv/omnetpp.ini`, seluruh parameter visualisasi diletakkan langsung di dalam blok **`[General]`**. Dengan demikian, visualisasi ini bersifat seragam dan otomatis aktif di semua skenario pengujian tanpa perlu konfigurasi tambahan.
+In `vanet_aodv/omnetpp.ini`, visualizer rules are placed directly within the `[General]` configuration block, ensuring consistent and clear presentation across all scenarios:
 
 ```ini
 ##########################################################
-#                GUI: Tampilan Visual Lengkap            #
+#                GUI: Multi-Layer Visualizer             #
 ##########################################################
 
-# 1. Matikan garis rambatan gelombang imajiner (agar tidak salah paham)
+# 1. Disable imaginary propagation rays to maintain clear views
 *.visualizer.*.mediumVisualizer.displaySignals = false
 
-# 2. Tampilkan LINGKARAN JANGKAUAN SINYAL NYATA (Radius Communication Range)
+# 2. Render PHYSICAL COMMUNICATION RANGE (Calculated Radio Circle)
 *.visualizer.*.mediumVisualizer.displayCommunicationRanges = true
 *.visualizer.*.mediumVisualizer.communicationRangeLineColor = "deepskyblue"
 *.visualizer.*.mediumVisualizer.communicationRangeLineStyle = "solid"
 *.visualizer.*.mediumVisualizer.communicationRangeLineWidth = 1.5
 
-# 3. Tampilkan LINK FISIK / MAC LAYER YANG BENAR-BENAR BERHASIL TERHUBUNG (1-Hop)
+# 3. Render 1-HOP MAC DATA LINKS (Successful Unicast Frame & ACK)
 *.visualizer.*.dataLinkVisualizer.displayLinks = true
 *.visualizer.*.dataLinkVisualizer.lineColor = "gold"
 *.visualizer.*.dataLinkVisualizer.lineWidth = 2.5
@@ -30,7 +30,7 @@ Pada berkas `vanet_aodv/omnetpp.ini`, seluruh parameter visualisasi diletakkan l
 *.visualizer.*.dataLinkVisualizer.labelFormat = "%n"
 *.visualizer.*.dataLinkVisualizer.labelColor = "darkorange"
 
-# 4. Tampilkan RUTE JARINGAN AODV YANG TERBENTUK (Multi-Hop End-to-End)
+# 4. Render END-TO-END AODV NETWORK ROUTES (Multi-Hop Paths)
 *.visualizer.*.networkRouteVisualizer.displayRoutes = true
 *.visualizer.*.networkRouteVisualizer.lineColor = "lime"
 *.visualizer.*.networkRouteVisualizer.lineWidth = 3.5
@@ -40,47 +40,47 @@ Pada berkas `vanet_aodv/omnetpp.ini`, seluruh parameter visualisasi diletakkan l
 
 ---
 
-## 2. Tabel Panduan Elemen Grafis & Makna Semantik
+## 2. Visual Elements & Semantic Legend
 
 <div align="center">
 
-| Elemen Visual | Simbol / Warna | Modul Visualizer | Makna Semantik & Interpretasi Fisik |
+| Visual Element | Graphical Appearance | Visualizer Component | Physical Meaning & Protocol Semantics |
 |---|:---:|---|---|
-| **Radius Sinyal Fisik** | 🔵 **Lingkaran Biru Langit** (`deepskyblue`) | `mediumVisualizer` | **Area jangkauan radio riil**. Mobil lain yang berada di dalam lingkaran ini dapat mendeteksi sinyal radio pemancar ($P_{rx} \ge -85\text{ dBm}$). |
-| **Link Data MAC 1-Hop** | 🟡 **Garis Emas / Kuning** (`gold`, 2.5px) | `dataLinkVisualizer` | **Koneksi fisik tetangga langsung**. Muncul sesaat ketika frame data berhasil dipertukarkan dan diakui (ACK) antar 2 mobil bertetangga. |
-| **Rute Multi-Hop AODV** | 🟢 **Garis Hijau Terang** (`lime`, 3.5px) | `networkRouteVisualizer` | **Jalur estafet rute jaringan aktif**. Garis panah tebal yang menghubungkan mobil pengirim, mobil-mobil perantara (*relay*), hingga mobil tujuan. |
-| **Peta Jaringan Jalan** | 🟤 **Garis Merah Bata** (`firebrick4`) | `roadsCanvasVisualizer` | **Struktur fisik jalan raya**. Menggambarkan bentuk jalan, percabangan, dan persimpangan dari peta SUMO ke kanvas OMNeT++. |
-| **Sinyal Rambatan Merah** | ❌ *(Dinonaktifkan)* | `mediumVisualizer.displaySignals` | **Garis imajiner rumus kalkulasi**. Sebelumnya sering disalahartikan sebagai paket yang sampai ke mobil berjarak 2 km, sehingga sengaja dimatikan. |
+| **Physical Radio Range** | 🔵 **DeepSkyBlue Circle** | `mediumVisualizer` | **Real physical transmission boundary**. Other vehicles inside this boundary receive sufficient signal power ($P_{rx} \ge -85\text{ dBm}$) to demodulate frames. |
+| **1-Hop MAC Data Link** | 🟡 **Gold Solid Line** (2.5px) | `dataLinkVisualizer` | **Direct 1-hop physical link**. Appears momentarily when an IEEE 802.11p unicast frame is transmitted and confirmed by an ACK. |
+| **AODV Multi-Hop Route** | 🟢 **Lime Green Arrow** (3.5px) | `networkRouteVisualizer` | **Active end-to-end network route**. A thick arrow showing the complete multi-hop relay path from source, through relay nodes, to the destination. |
+| **Road Network Geometry** | 🟤 **Firebrick Line** | `roadsCanvasVisualizer` | **SUMO road infrastructure**. Renders physical street lanes and intersection layouts onto the OMNeT++ canvas. |
+| **Propagation Rays** | ❌ *(Globally Disabled)* | `mediumVisualizer.displaySignals` | **Mathematical path loss calculation lines**. Disabled to eliminate distracting red lines extending across the entire map. |
 
 </div>
 
 ---
 
-## 3. Penjelasan Khusus: Garis Merah `(WirelessSignal)`
+## 3. Disabling Imaginary Red Rays (`WirelessSignal`)
 
-### Mengapa Sebelumnya Muncul Garis Merah Panjang Melintasi Peta?
-Pada pengaturan bawaan INET, opsi `displaySignals = true` akan menggambar panah merah dari antena pemancar ke **seluruh antena node lain di peta** setiap kali ada transmisi.
-- **Tujuan Asli INET**: Visualizer hanya ingin menunjukkan bahwa simulator sedang menghitung rumus pelemahan sinyal (*path loss calculation*) antara antena pengirim dan semua calon penerima di dunia simulasi.
-- **Kenyataan Fisik**: Pada jarak di atas 500 meter atau 1 km, sinyal daya pancar $10\text{ mW}$ telah melemah hingga berada jauh di bawah ambang batas sensitivitas (misal $-120\text{ dBm}$), sehingga di mobil penerima sinyal dianggap sebagai *noise* dan **paket langsung dibuang (*dropped*)**.
-- **Keputusan Desain**: Garis merah ini **dimatikan secara default (`displaySignals = false`)** agar pandangan pengamat tidak tertutup jaring benang merah yang membingungkan.
+### Why Were Red Lines Previously Drawn Across the Entire Map?
+By default, INET's `mediumVisualizer.displaySignals = true` draws red arrows connecting the transmitting antenna to **every other antenna in the entire simulation world**.
+- **Theoretical Intent**: INET indicates that it is computing path loss equations between the transmitter and potential receivers.
+- **Physical Reality**: At distances beyond 500 meters or 1 km, a 10mW signal has attenuated below the receiver sensitivity threshold (e.g., $-120\text{ dBm}$). Receivers treat it as noise and immediately discard the packet.
+- **Design Decision**: `displaySignals` is **explicitly disabled** to ensure the canvas reflects only verified communication events.
 
 ---
 
-## 4. Tips Navigasi Interaktif di Antarmuka Qtenv
+## 4. Interactive Qtenv Runtime Inspection
 
-Saat menjalankan simulasi dengan `./run_gui.sh`, Anda dapat menggunakan berbagai fitur interaktif Qtenv:
+When running in GUI mode (`./run_gui.sh`), you can inspect internal protocol states during simulation runtime:
 
-1. **Memeriksa Tabel Routing AODV Real-Time**:
-   - Klik kanan pada mobil mana saja (misal `node[0]` atau `node[4]`).
-   - Pilih menu **Open Component > aodv**.
-   - Anda dapat melihat entri tabel routing yang sedang aktif, alamat tujuan, *Next Hop IP*, *Destination Sequence Number*, dan sisa masa berlaku rute (*lifetime*).
+1. **Inspecting AODV Routing Tables in Real Time**:
+   - Right-click any vehicle (e.g., `node[0]` or `node[4]`).
+   - Select **Open Component > aodv**.
+   - View destination IP addresses, next-hop IPs, sequence numbers, hop counts, and remaining route lifetimes.
 
-2. **Memeriksa Antarmuka Radio & Nilai Daya Terima**:
-   - Klik kanan pada `node[*] > wlan[0] > radio`.
-   - Pilih **Inspect**.
-   - Anda dapat memantau status radio secara langsung (*TRANSMITTING*, *RECEIVING*, *IDLE*), frekuensi kanal yang sedang digunakan, dan daya pancar saat ini.
+2. **Inspecting Radio Transceiver States**:
+   - Right-click `node[*] > wlan[0] > radio`.
+   - Select **Inspect**.
+   - Monitor the instantaneous radio status (*TRANSMITTING*, *RECEIVING*, *IDLE*), current center frequency, and transmission power.
 
-3. **Mengatur Kecepatan Animasi**:
-   - Tombol **Run (F5)**: Menjalankan animasi secara halus (*smooth real-time*).
-   - Tombol **Fast (F6)**: Menjalankan animasi lebih cepat dengan tetap menampilkan grafik.
-   - Tombol **Express (F7)**: Mematikan render grafis sementara untuk menyelesaikan simulasi dalam kecepatan komputasi maksimum prosesor.
+3. **Animation Speed Controls**:
+   - **Run (F5)**: Standard smooth real-time animation.
+   - **Fast (F6)**: Accelerated execution while still rendering graphics.
+   - **Express (F7)**: Maximum computation speed (temporarily disables GUI rendering to process events as quickly as possible).

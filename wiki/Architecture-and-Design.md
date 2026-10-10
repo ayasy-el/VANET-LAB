@@ -1,16 +1,16 @@
-# 🏗️ Arsitektur & Desain Sistem
+# 🏗️ Architecture & System Design
 
-Dokumen ini menjelaskan rancangan arsitektur perangkat lunak, integrasi antar-simulator, dan struktur modul NED (*Network Description*) yang menyusun sistem simulasi VANET-AODV.
+This document details the software architecture, multi-simulator coupling mechanisms, and NED (*Network Description*) module hierarchy of the VANET-AODV simulation platform.
 
 ---
 
-## 1. Integrasi Multi-Simulator (Bi-directional Coupling)
+## 1. Multi-Simulator Coupling (Bi-directional Synchronization)
 
-Simulasi jaringan kendaraan membutuhkan dua domain yang berbeda secara fundamental:
-1. **Mobilitas Fisik Kendaraan**: Akselerasi, pengereman, perubahan lajur, kepatuhan lampu lalu lintas, dan interaksi jarak aman antar mobil. Ini ditangani oleh **Eclipse SUMO**.
-2. **Komunikasi Nirkabel Jaringan**: Propagasi gelombang radio, interferensi sinyal, paket antrean MAC, protokol routing multi-hop, dan aplikasi jaringan. Ini ditangani oleh **OMNeT++** bersama **INET Framework**.
+Vehicular network simulations require accurate modeling across two fundamentally different domains:
+1. **Physical Vehicular Mobility**: Acceleration, braking, lane-changing dynamics, traffic light compliance, and collision avoidance. This is simulated by **Eclipse SUMO**.
+2. **Wireless Network Communications**: Radio wave propagation, signal attenuation, interference, MAC contention, routing protocols, and user applications. This is simulated by **OMNeT++** alongside the **INET Framework**.
 
-Jembatan sinkronisasi antara kedua simulator ini dihubungkan secara *real-time* oleh **Veins** (*Vehicular Network Open, Integrated with OMNeT++*) melalui protokol TCP bernama **TraCI (Traffic Control Interface)**.
+Real-time synchronization between both simulators is bridged by **Veins** (*Vehicular Network Open, Integrated with OMNeT++*) over the TCP-based **TraCI (Traffic Control Interface)** protocol.
 
 ```
        OMNeT++ (Client)                             SUMO (Server)
@@ -18,31 +18,31 @@ Jembatan sinkronisasi antara kedua simulator ini dihubungkan secara *real-time* 
     │ VeinsInetManager     │─── TraCI Connect ──►│ Port 9999       │
     │                      │◄── Handshake OK ────│ (sumo / -gui)   │
     │                      │                     │                 │
-    │ Loop Waktu (dt=0.1s):│                     │                 │
-    │                      │─── Timestep (t) ───►│ Simulasi Fisik  │
-    │                      │◄── Data Kendaraan ──│ Posisi, Speed   │
-    │                      │    (X, Y, Heading)  │ Lajur, Status   │
-    │ Update Node INET     │                     │                 │
+    │ Time Loop (dt=0.1s): │                     │                 │
+    │                      │─── Timestep (t) ───►│ Physical Motion │
+    │                      │◄── Vehicle States ──│ Positions (XYZ) │
+    │                      │    (Speed, Heading) │ Speeds, Lanes   │
+    │ Update INET Node     │                     │                 │
     │ (VeinsInetMobility)  │                     │                 │
     └──────────────────────┘                     └─────────────────┘
 ```
 
-### Siklus Waktu Per-Langkah (Timestep Loop):
-1. OMNeT++ mengirimkan perintah `timestep` ke daemon SUMO melalui soket TCP port 9999.
-2. SUMO memajukan simulasi fisik kendaraan sebesar interval yang dikonfigurasi (`*.manager.updateInterval = 0.1s`).
-3. SUMO merespons dengan daftar mobil aktif beserta posisi koordinat kartesius $(x, y, z)$, kecepatan, dan arah hadap (*heading*).
-4. `VeinsInetManager` di sisi OMNeT++ secara dinamis:
-   - Membuat instance modul `node[i]` baru jika ada mobil yang baru muncul.
-   - Memperbarui koordinat fisik pada submodul `mobility` (`VeinsInetMobility`).
-   - Menghapus modul `node[i]` jika mobil telah menyelesaikan rutenya dan keluar dari peta SUMO.
+### Timestep Synchronization Loop:
+1. OMNeT++ sends a `timestep` command to the SUMO daemon over the TCP socket at port 9999.
+2. SUMO advances its microscopic vehicle physics by the configured update interval (`*.manager.updateInterval = 0.1s`).
+3. SUMO responds with active vehicle states, including cartesian coordinates $(x, y, z)$, velocities, and headings.
+4. `VeinsInetManager` in OMNeT++ dynamically:
+   - Instantiates new `node[i]` submodules when vehicles depart onto the SUMO street network.
+   - Updates the physical coordinates of the `VeinsInetMobility` submodules.
+   - Deconstructs `node[i]` submodules when vehicles reach their destination and exit the SUMO map.
 
 ---
 
-## 2. Struktur Modul Jaringan (NED Hierarchy)
+## 2. Network Module Hierarchy (NED Architecture)
 
-Topologi simulasi didefinisikan secara deklaratif dalam bahasa NED (*Network Description*).
+Network topologies and submodules are declaratively defined using OMNeT++'s NED language.
 
-### A. Topologi Utama: `Scenario.ned`
+### A. Top-Level Network: `Scenario.ned`
 
 ```ned
 package vanet_aodv;
@@ -75,23 +75,23 @@ network Scenario
             @display("p=150,500");
         }
         rsu[numRsu]: VeinsAodvRSU {
-            @display("p=1025,870");
+            @display("p=1040,868");
         }
         node[0]: VeinsAodvCar;
 }
 ```
 
-#### Komponen Kunci `Scenario.ned`:
-- **`radioMedium` (`Ieee80211DimensionalRadioMedium`)**: Submodul ruang perambatan gelombang radio nirkabel. Menghitung daya sinyal terima, pelemahan ruang bebas (*path loss*), derau lingkungan, dan tabrakan paket (*collision*).
-- **`manager` (`VeinsInetManager`)**: Manajer TraCI yang terhubung ke daemon SUMO. Bertanggung jawab atas siklus hidup (*lifecycle*) mobil `node[*]`.
-- **`roadsCanvasVisualizer` (`RoadsCanvasVisualizer`)**: Menggambar garis bentuk jalan raya dari `maps.net.xml` ke kanvas GUI OMNeT++.
-- **`visualizer` (`IntegratedVisualizer`)**: Engine visualisasi grafis untuk merender jangkauan radio, koneksi data-link MAC, dan rute multi-hop AODV.
-- **`rsu[numRsu]` (`VeinsAodvRSU`)**: Node infrastruktur statis (opsional, aktif jika `numRsu > 0`).
-- **`node[0]` (`VeinsAodvCar`)**: Placeholder node dinamis. Di waktu *runtime*, `manager` akan mengekspansi array ini menjadi `node[0]`, `node[1]`, ..., `node[N-1]` sesuai jumlah mobil di SUMO.
+#### Key Components:
+- **`radioMedium` (`Ieee80211DimensionalRadioMedium`)**: Wireless transmission space. Calculates signal reception power, path loss, environmental noise, and packet collisions.
+- **`manager` (`VeinsInetManager`)**: TraCI bridge controller managing vehicular lifecycles and coordinate mappings.
+- **`roadsCanvasVisualizer` (`RoadsCanvasVisualizer`)**: Renders SUMO street geometries onto the OMNeT++ 2D canvas.
+- **`visualizer` (`IntegratedVisualizer`)**: Central engine rendering radio communication ranges, 1-hop MAC links, and multi-hop network routes.
+- **`rsu[numRsu]` (`VeinsAodvRSU`)**: Optional static infrastructure gateway node.
+- **`node[0]` (`VeinsAodvCar`)**: Dynamic node array placeholder expanded at runtime into `node[0..N-1]`.
 
 ---
 
-### B. Modul Kendaraan: `VeinsAodvCar.ned`
+### B. Vehicular Node: `VeinsAodvCar.ned`
 
 ```ned
 package vanet_aodv;
@@ -105,16 +105,16 @@ module VeinsAodvCar extends AodvRouter
 }
 ```
 
-`VeinsAodvCar` mewarisi (*extends*) modul **`AodvRouter`** dari INET Framework. Hal ini memberikan kapabilitas penuh sebuah node IP bergerak:
-- **Stack Aplikasi (`app[*]`)**: Mendukung pengujian ICMP `PingApp`, `UdpBasicApp`, maupun `UdpSink`.
-- **Protokol Routing (`aodv`)**: Engine AODV RFC 3561 dengan tabel routing dan buffer paket.
-- **Lapisan Jaringan (`ipv4`)**: IP routing, fragmentasi, dan `GlobalArp`.
-- **Antarmuka Nirkabel (`wlan[*]`)**: NIC IEEE 802.11p yang terintegrasi dengan radio dimensional.
-- **Submodul Mobilitas (`mobility`)**: Diarahkan ke tipe `VeinsInetMobility` untuk menerima koordinat dinamis dari SUMO.
+`VeinsAodvCar` inherits from INET's **`AodvRouter`**, equipping the vehicle with a complete IPv4 network stack:
+- **Application Layer (`app[*]`)**: Supports `PingApp`, `UdpBasicApp`, and `UdpSink`.
+- **Routing Protocol (`aodv`)**: RFC 3561 AODV routing engine with packet queues and route tables.
+- **Network Layer (`ipv4`)**: IP routing, fragmentation, and `GlobalArp`.
+- **Wireless Interface (`wlan[*]`)**: IEEE 802.11p NIC coupled with dimensional physical radio.
+- **Mobility Submodule (`mobility`)**: Bound to `VeinsInetMobility` to receive real-time coordinates from SUMO.
 
 ---
 
-### C. Modul Road-Side Unit: `VeinsAodvRSU.ned`
+### C. Road-Side Unit: `VeinsAodvRSU.ned`
 
 ```ned
 package vanet_aodv;
@@ -128,15 +128,15 @@ module VeinsAodvRSU extends AodvRouter
 }
 ```
 
-Sama halnya dengan kendaraan, RSU merupakan varian dari `AodvRouter`. Perbedaannya terletak pada konfigurasinya di `omnetpp.ini`:
-- Menggunakan `StationaryMobility` dengan posisi koordinat tetap $(X=1025\text{m}, Y=870\text{m}, Z=5\text{m})$.
-- Memiliki daya transmisi lebih besar ($100\text{ mW}$) untuk menyediakan jangkauan cakupan area persimpangan yang luas.
+The Road-Side Unit also extends `AodvRouter`, but is configured with static infrastructure properties:
+- Uses `StationaryMobility` positioned at a central urban intersection $(X=1040\text{m}, Y=868\text{m}, Z=5\text{m})$.
+- Employs a higher transmission power ($100\text{ mW}$) to provide broad intersection coverage.
 
 ---
 
-## 3. Skema Pengalamatan Jaringan (IPv4 & ARP)
+## 3. Network Addressing Scheme (IPv4 & ARP)
 
-Pengalamatan IP pada topologi nirkabel dinamis dikonfigurasi secara otomatis menggunakan **`HostAutoConfigurator`**:
+IP address assignment is automatically handled via INET's **`HostAutoConfigurator`**:
 
 ```ini
 *.node[*].ipv4.configurator.typename = "HostAutoConfigurator"
@@ -147,9 +147,9 @@ Pengalamatan IP pada topologi nirkabel dinamis dikonfigurasi secara otomatis men
 *.node[*].ipv4.arp.typename = "GlobalArp"
 ```
 
-- **Blok Subnet**: Seluruh node mobil dan RSU berada dalam satu subnet privat kelas A (`10.0.0.0/8`).
-  - Mobil 0: `10.0.0.1`
-  - Mobil 1: `10.0.0.2`
-  - Mobil $k$: `10.0.0.(k+1)`
+- **Subnet Structure**: Vehicles and RSUs reside within a single Class A private subnet (`10.0.0.0/8`):
+  - Vehicle 0: `10.0.0.1`
+  - Vehicle 1: `10.0.0.2`
+  - Vehicle $k$: `10.0.0.(k+1)`
   - RSU 0: `10.0.0.X`
-- **Global ARP**: Menggunakan `GlobalArp` untuk menyederhanakan resolusi MAC-ke-IP tanpa perlu membanjiri spektrum frekuensi dengan broadcast ARP berkala. Hal ini menjaga kanal nirkabel tetap murni untuk evaluasi protokol routing AODV dan trafik data aplikasi.
+- **Global ARP Optimization**: INET's `GlobalArp` resolves MAC-to-IP mappings globally without injecting broadcast ARP requests into the wireless spectrum. This keeps the 5.9 GHz channel clean for accurate measurement of AODV control overhead and application traffic.

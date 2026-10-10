@@ -1,31 +1,31 @@
 #!/usr/bin/env python3
 """
 ==============================================================================
-import_map.py - Otomasi Konversi Peta .osm ke Lingkungan Simulasi VANET-AODV
+import_map.py - Automated OSM Map Importer & Pipeline Generator for VANET-AODV
 ==============================================================================
 
-Alur Kerja:
-1. Mengonversi berkas OpenStreetMap (.osm) menjadi jaringan jalan SUMO (maps.net.xml)
-   menggunakan netconvert dengan proyeksi UTM kartesius.
-2. Mengekstrak koordinat batas peta (convBoundary), menghitung dimensi & luas,
-   serta menentukan titik koordinat tengah kota untuk penempatan Road-Side Unit (RSU).
-3. Membangkitkan rute perjalanan kendaraan acak menggunakan randomTrips.py dan duarouter.
-4. Memformat seluruh armada kendaraan agar langsung berangkat serentak pada t=0.00s
-   (depart="0.00", departLane="best", departSpeed="max") dengan penomoran indeks
-   berurutan (0, 1, 2, ... N-1).
-5. Menyinkronkan konfigurasi ke:
+Workflow:
+1. Converts OpenStreetMap (.osm) file into SUMO road network (maps.net.xml)
+   using netconvert with real UTM cartesian coordinates.
+2. Extracts bounding coordinates (convBoundary), calculates dimensions & area,
+   and computes the urban centroid for automatic Road-Side Unit (RSU) placement.
+3. Generates random origin-destination trips via randomTrips.py and duarouter.
+4. Normalizes all vehicle routes for simultaneous t=0.00s departure
+   (depart="0.00", departLane="best", departSpeed="max") with contiguous IDs
+   (0, 1, 2, ... N-1).
+5. Synchronizes configuration files:
    - maps.net.xml, maps.rou.xml, maps.rou.all.xml, maps.sumocfg
-   - vanet_aodv/Scenario.ned (ukuran kanvas @display bgb dan posisi RSU)
-   - vanet_aodv/omnetpp.ini (koordinat initialX dan initialY modul RSU)
-6. Menghasilkan topologi yang langsung siap dieksekusi oleh OMNeT++ (Qtenv/Cmdenv).
+   - vanet_aodv/Scenario.ned (canvas size @display bgb and RSU display position)
+   - vanet_aodv/omnetpp.ini (RSU initialX and initialY coordinates)
+6. Outputs a turnkey simulation environment ready for OMNeT++ (Qtenv/Cmdenv).
 
-Penggunaan:
-    ./import_map.py [path_ke_file.osm] [--cars JUMLAH_MOBIL] [--trips JUMLAH_TRIP]
+Usage:
+    ./import_map.py [path_to_file.osm] [--cars ACTIVE_CARS] [--trips TOTAL_TRIPS]
 
-Contoh:
+Examples:
     ./import_map.py map.osm
-    ./import_map.py surabaya_barat.osm --cars 30
-    ./import_map.py /tmp/bandung.osm --cars 50 --trips 200
+    ./import_map.py surabaya.osm --cars 30
+    ./import_map.py /tmp/city.osm --cars 50 --trips 200
 """
 
 import sys
@@ -40,7 +40,7 @@ ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 VANET_DIR = os.path.join(ROOT_DIR, "vanet_aodv")
 
 def locate_tool(name):
-    """Mencari path binary pada PATH sistem."""
+    """Searches for binary executable in PATH and venv."""
     path = shutil.which(name)
     if path:
         return path
@@ -50,7 +50,7 @@ def locate_tool(name):
     return None
 
 def locate_random_trips():
-    """Mencari lokasi skrip randomTrips.py SUMO."""
+    """Locates SUMO's randomTrips.py script."""
     candidates = []
     if "SUMO_HOME" in os.environ:
         candidates.append(os.path.join(os.environ["SUMO_HOME"], "tools", "randomTrips.py"))
@@ -61,7 +61,6 @@ def locate_random_trips():
     except ImportError:
         pass
 
-    # Jalur virtual environment proyek
     candidates.append(os.path.join(ROOT_DIR, "../omnetpp-6.4.0/.venv/lib/python3.14/site-packages/sumo/tools/randomTrips.py"))
     candidates.append("/usr/share/sumo/tools/randomTrips.py")
     candidates.append("/usr/lib/sumo/tools/randomTrips.py")
@@ -76,23 +75,23 @@ def locate_random_trips():
     return None
 
 def run_command(cmd, desc):
-    """Menjalankan perintah eksternal dengan penanganan error."""
+    """Executes external subprocess with error handling."""
     print(f"[*] {desc}...")
     try:
         res = subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         return res
     except subprocess.CalledProcessError as e:
-        print(f"[!] ERROR saat {desc}:")
+        print(f"[!] ERROR during {desc}:")
         print(e.stderr or e.stdout)
         sys.exit(1)
 
 def parse_boundary(net_file):
-    """Mengekstrak convBoundary dari maps.net.xml."""
+    """Parses convBoundary attribute from maps.net.xml."""
     tree = ET.parse(net_file)
     root = tree.getroot()
     location = root.find("location")
     if location is None or "convBoundary" not in location.attrib:
-        raise ValueError(f"Atribut convBoundary tidak ditemukan pada {net_file}!")
+        raise ValueError(f"convBoundary attribute not found in {net_file}!")
 
     conv = location.attrib["convBoundary"]
     parts = [float(x.strip()) for x in conv.split(",")]
@@ -100,7 +99,7 @@ def parse_boundary(net_file):
     return min_x, min_y, max_x, max_y
 
 def format_routes(input_rou_file, output_all_file, output_active_file, num_active_cars):
-    """Memfilter dan menormalisasi rute kendaraan agar berangkat di t=0s."""
+    """Filters and normalizes vehicle routes for simultaneous t=0.00s departures."""
     tree = ET.parse(input_rou_file)
     root = tree.getroot()
     raw_vehicles = root.findall("vehicle")
@@ -112,12 +111,12 @@ def format_routes(input_rou_file, output_all_file, output_active_file, num_activ
             valid_vehicles.append(v)
 
     if not valid_vehicles:
-        print("[!] ERROR: Tidak ada rute kendaraan valid yang berhasil digenerate oleh duarouter!")
+        print("[!] ERROR: No valid vehicle routes could be generated by duarouter!")
         sys.exit(1)
 
-    print(f"[✓] Berhasil menemukan {len(valid_vehicles)} rute valid pada jaringan jalan.")
+    print(f"[✓] Successfully verified {len(valid_vehicles)} valid shortest-path routes.")
 
-    # Buat XML Master Pool (maps.rou.all.xml)
+    # Master Pool (maps.rou.all.xml)
     all_root = ET.Element("routes")
     for k, v in root.attrib.items():
         all_root.attrib[k] = v
@@ -134,7 +133,7 @@ def format_routes(input_rou_file, output_all_file, output_active_file, num_activ
     ET.indent(all_tree, space="    ", level=0)
     all_tree.write(output_all_file, encoding="utf-8", xml_declaration=True)
 
-    # Buat XML Aktif (maps.rou.xml)
+    # Active Subset (maps.rou.xml)
     active_count = min(num_active_cars, len(valid_vehicles))
     active_root = ET.Element("routes")
     for k, v in root.attrib.items():
@@ -150,7 +149,7 @@ def format_routes(input_rou_file, output_all_file, output_active_file, num_activ
     return len(valid_vehicles), active_count
 
 def update_ned_and_ini(max_x, max_y, rsu_x, rsu_y):
-    """Memperbarui kanvas Scenario.ned dan posisi RSU di omnetpp.ini."""
+    """Updates Scenario.ned canvas and RSU coordinates in omnetpp.ini."""
     canvas_w = max(2500, int(max_x * 1.15))
     canvas_h = max(2000, int(max_y * 1.15))
     rsu_x_int = int(rsu_x)
@@ -161,13 +160,11 @@ def update_ned_and_ini(max_x, max_y, rsu_x, rsu_y):
         with open(ned_file, "r") as f:
             ned_content = f.read()
 
-        # Update bgb=canvas_w,canvas_h
         ned_content = re.sub(
             r'@display\("bgb=\d+,\d+"\);',
             f'@display("bgb={canvas_w},{canvas_h}");',
             ned_content
         )
-        # Update RSU display position
         ned_content = re.sub(
             r'rsu\[numRsu\]:\s*VeinsAodvRSU\s*\{[^}]*@display\("p=\d+,\d+"\);',
             f'rsu[numRsu]: VeinsAodvRSU {{\n            @display("p={rsu_x_int},{rsu_y_int}");',
@@ -175,7 +172,7 @@ def update_ned_and_ini(max_x, max_y, rsu_x, rsu_y):
         )
         with open(ned_file, "w") as f:
             f.write(ned_content)
-        print(f"[✓] Memperbarui Scenario.ned: Kanvas ({canvas_w}x{canvas_h}), RSU display ({rsu_x_int}, {rsu_y_int}).")
+        print(f"[✓] Updated Scenario.ned: Canvas ({canvas_w}x{canvas_h}), RSU display ({rsu_x_int}, {rsu_y_int}).")
 
     ini_file = os.path.join(VANET_DIR, "omnetpp.ini")
     if os.path.exists(ini_file):
@@ -194,10 +191,10 @@ def update_ned_and_ini(max_x, max_y, rsu_x, rsu_y):
         )
         with open(ini_file, "w") as f:
             f.write(ini_content)
-        print(f"[✓] Memperbarui omnetpp.ini: Posisi RSU koordinat ({rsu_x_int}m, {rsu_y_int}m).")
+        print(f"[✓] Updated omnetpp.ini: RSU physical coordinates ({rsu_x_int}m, {rsu_y_int}m).")
 
 def generate_sumocfg(net_filename, rou_filename, sumocfg_path):
-    """Membuat berkas maps.sumocfg standar."""
+    """Generates standard maps.sumocfg configuration."""
     content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
     <input>
@@ -215,38 +212,38 @@ def generate_sumocfg(net_filename, rou_filename, sumocfg_path):
         f.write(content)
 
 def main():
-    parser = argparse.ArgumentParser(description="Konversi Peta .osm Menjadi Lingkungan Simulasi VANET Siap Pakai")
-    parser.add_argument("osm_file", nargs="?", default="map.osm", help="Path berkas .osm sumber (default: map.osm)")
-    parser.add_argument("--cars", type=int, default=20, help="Jumlah mobil aktif yang melaju (default: 20)")
-    parser.add_argument("--trips", type=int, default=150, help="Jumlah kandidat trip acak yang digenerate (default: 150)")
+    parser = argparse.ArgumentParser(description="Convert .osm map into a ready-to-run VANET simulation environment")
+    parser.add_argument("osm_file", nargs="?", default="map.osm", help="Path to input .osm file (default: map.osm)")
+    parser.add_argument("--cars", type=int, default=20, help="Number of active vehicles deployed (default: 20)")
+    parser.add_argument("--trips", type=int, default=150, help="Number of candidate trips to generate (default: 150)")
     args = parser.parse_args()
 
     osm_path = os.path.abspath(args.osm_file)
     if not os.path.exists(osm_path):
-        print(f"[!] ERROR: Berkas peta '{osm_path}' tidak ditemukan!")
+        print(f"[!] ERROR: Map file '{osm_path}' not found!")
         sys.exit(1)
 
     print("==================================================================")
     print("  VANET-AODV MAP IMPORT & PIPELINE GENERATOR")
     print("==================================================================")
-    print(f" Peta Sumber   : {osm_path}")
-    print(f" Mobil Aktif   : {args.cars}")
+    print(f" Source Map    : {osm_path}")
+    print(f" Active Cars   : {args.cars}")
     print(f" Target Trips  : {args.trips}")
     print("------------------------------------------------------------------")
 
-    # 1. Cek Tools
+    # 1. Check tools
     netconvert_bin = locate_tool("netconvert")
     duarouter_bin = locate_tool("duarouter")
     random_trips_py = locate_random_trips()
 
     if not netconvert_bin:
-        print("[!] ERROR: 'netconvert' tidak ditemukan di PATH!")
+        print("[!] ERROR: 'netconvert' not found in PATH!")
         sys.exit(1)
     if not duarouter_bin:
-        print("[!] ERROR: 'duarouter' tidak ditemukan di PATH!")
+        print("[!] ERROR: 'duarouter' not found in PATH!")
         sys.exit(1)
     if not random_trips_py:
-        print("[!] ERROR: 'randomTrips.py' tidak ditemukan!")
+        print("[!] ERROR: 'randomTrips.py' not found!")
         sys.exit(1)
 
     tmp_dir = "/tmp/vanet_map_build"
@@ -259,7 +256,7 @@ def main():
     tmp_rou_active = os.path.join(tmp_dir, "maps.rou.xml")
     tmp_sumocfg = os.path.join(tmp_dir, "maps.sumocfg")
 
-    # 2. Jalankan netconvert
+    # 2. Run netconvert
     cmd_netconvert = [
         netconvert_bin,
         "--osm-files", osm_path,
@@ -272,9 +269,9 @@ def main():
         "--tls.discard-simple",
         "--proj.utm"
     ]
-    run_command(cmd_netconvert, "Mengonversi .osm ke SUMO net (netconvert)")
+    run_command(cmd_netconvert, "Converting .osm to SUMO road network (netconvert)")
 
-    # 3. Baca Dimensi Bounding Box
+    # 3. Parse bounding box
     min_x, min_y, max_x, max_y = parse_boundary(tmp_net)
     width = max_x - min_x
     height = max_y - min_y
@@ -282,13 +279,13 @@ def main():
     rsu_y = (min_y + max_y) / 2.0
     area_km2 = (width * height) / 1_000_000.0
 
-    print(f"[✓] Batas Peta (UTM): [0.00, 0.00] s/d [{max_x:.2f}, {max_y:.2f}]")
-    print(f"    - Lebar (X)     : {width:.2f} m ({width/1000:.2f} km)")
-    print(f"    - Tinggi (Y)    : {height:.2f} m ({height/1000:.2f} km)")
-    print(f"    - Luas Wilayah  : {area_km2:.2f} km²")
-    print(f"    - Pusat RSU     : ({rsu_x:.2f}m, {rsu_y:.2f}m)")
+    print(f"[✓] Bounding Box (UTM): [0.00, 0.00] to [{max_x:.2f}, {max_y:.2f}]")
+    print(f"    - Width (X)     : {width:.2f} m ({width/1000:.2f} km)")
+    print(f"    - Height (Y)    : {height:.2f} m ({height/1000:.2f} km)")
+    print(f"    - Total Area    : {area_km2:.2f} km²")
+    print(f"    - RSU Centroid  : ({rsu_x:.2f}m, {rsu_y:.2f}m)")
 
-    # 4. Bangkitkan Random Trips
+    # 4. Generate random trips
     cmd_trips = [
         sys.executable,
         random_trips_py,
@@ -298,9 +295,9 @@ def main():
         "-l",
         "--validate"
     ]
-    run_command(cmd_trips, f"Membangkitkan {args.trips} rute trip kendaraan acak (randomTrips.py)")
+    run_command(cmd_trips, f"Generating {args.trips} random candidate trips (randomTrips.py)")
 
-    # 5. Jalankan duarouter
+    # 5. Run duarouter
     cmd_duarouter = [
         duarouter_bin,
         "-n", tmp_net,
@@ -308,15 +305,15 @@ def main():
         "-o", tmp_rou,
         "--ignore-errors"
     ]
-    run_command(cmd_duarouter, "Menghitung jalur rute terpendek di jalan raya (duarouter)")
+    run_command(cmd_duarouter, "Computing shortest-path vehicular routes (duarouter)")
 
-    # 6. Format Rute (depart=0.00s, consecutive IDs)
+    # 6. Format routes
     total_valid, active_cars = format_routes(tmp_rou, tmp_rou_all, tmp_rou_active, args.cars)
 
-    # 7. Generate maps.sumocfg
+    # 7. Generate sumocfg
     generate_sumocfg("maps.net.xml", "maps.rou.xml", tmp_sumocfg)
 
-    # 8. Sinkronkan ke Root dan Direktori vanet_aodv
+    # 8. Synchronize to root and vanet_aodv
     target_dirs = [ROOT_DIR, VANET_DIR]
     files_to_sync = [
         (tmp_net, "maps.net.xml"),
@@ -331,25 +328,24 @@ def main():
             dest_path = os.path.join(d, fname)
             shutil.copyfile(src_path, dest_path)
 
-    # Simpan juga peta asli ke direktori root jika berbeda nama
     dest_osm = os.path.join(ROOT_DIR, "map.osm")
     if osm_path != dest_osm:
         shutil.copyfile(osm_path, dest_osm)
 
-    # 9. Update Scenario.ned dan omnetpp.ini
+    # 9. Update Scenario.ned and omnetpp.ini
     update_ned_and_ini(max_x, max_y, rsu_x, rsu_y)
 
     print("==================================================================")
-    print("  [✓] PROSES IMPORT PETA BERHASIL & SELESAI!")
+    print("  [✓] MAP IMPORT PIPELINE COMPLETED SUCCESSFULLY!")
     print("==================================================================")
-    print(f" • Total Rute Tersedia : {total_valid} mobil")
-    print(f" • Mobil Aktif (t=0s)  : {active_cars} mobil")
-    print(f" • Posisi RSU Otomatis : ({int(rsu_x)}m, {int(rsu_y)}m)")
-    print(f" • Ukuran Kanvas OMNeT : {max(2500, int(max_x * 1.15))} x {max(2000, int(max_y * 1.15))}")
+    print(f" • Total Routes Built  : {total_valid} vehicles")
+    print(f" • Active Fleet (t=0s) : {active_cars} vehicles")
+    print(f" • Auto RSU Position   : ({int(rsu_x)}m, {int(rsu_y)}m)")
+    print(f" • OMNeT++ Canvas Size : {max(2500, int(max_x * 1.15))} x {max(2000, int(max_y * 1.15))}")
     print("")
-    print(" Sekarang simulasi langsung siap dijalankan:")
-    print("   1. Mode Grafis GUI   : cd vanet_aodv && ./run_gui.sh")
-    print("   2. Mode Terminal     : cd vanet_aodv && ./run_cmd.sh AODV_V2V_Ping 30s")
+    print(" The simulation is now ready to run:")
+    print("   1. Interactive GUI Mode : cd vanet_aodv && ./run_gui.sh")
+    print("   2. Headless CLI Mode    : cd vanet_aodv && ./run_cmd.sh AODV_V2V_Ping 30s")
     print("==================================================================")
 
 if __name__ == "__main__":

@@ -1,17 +1,17 @@
-# 🧪 Panduan Skenario Simulasi
+# 🧪 Simulation Scenarios Guide
 
-Dokumen ini menjelaskan secara rinci keempat skenario studi kasus operasional VANET yang didefinisikan dalam berkas `vanet_aodv/omnetpp.ini`.
+This document provides a detailed breakdown of the four operational VANET benchmark scenarios defined in `vanet_aodv/omnetpp.ini`.
 
 ---
 
-## 1. Ikhtisar Skenario Pengujian
+## 1. Scenario Hierarchy
 
-Semua skenario dibangun di atas modul topologi jaringan `vanet_aodv.Scenario` dan mewarisi konfigurasi global `[General]`:
+All scenarios build upon the `vanet_aodv.Scenario` network topology and inherit parameters from the global `[General]` section:
 
 ```
                            ┌───────────────────────────┐
                            │      [Config General]     │
-                           │   Radio 5.9GHz, Visual,   │
+                           │   5.9GHz Radio, Visual,   │
                            │     AODV Base, TraCI      │
                            └─────────────┬─────────────┘
                                          │
@@ -19,7 +19,7 @@ Semua skenario dibangun di atas modul topologi jaringan `vanet_aodv.Scenario` da
          ▼                               ▼                               ▼
 ┌──────────────────┐            ┌──────────────────┐            ┌──────────────────┐
 │  AODV_V2V_Ping   │            │   AODV_V2V_UDP   │            │   AODV_V2I_RSU   │
-│  V2V Ping (ICMP) │            │  V2V Stream UDP  │            │  V2I Telemetri   │
+│  V2V Ping (ICMP) │            │  V2V Stream UDP  │            │  V2I Telemetry   │
 └──────────────────┘            └────────┬─────────┘            └──────────────────┘
                                          │ extends
                                          ▼
@@ -31,16 +31,16 @@ Semua skenario dibangun di atas modul topologi jaringan `vanet_aodv.Scenario` da
 
 ---
 
-## 2. Bedah Teknis Skenario
+## 2. Technical Breakdown of Benchmark Scenarios
 
 ---
 
-### Skenario 1: `[Config AODV_V2V_Ping]`
-*Pengujian Penemuan Rute Bolak-Balik (Round-Trip Route Discovery) Menggunakan ICMP*
+### Scenario 1: `[Config AODV_V2V_Ping]`
+*Bidirectional Route Discovery Evaluation Using ICMP Echo*
 
 ```ini
 [Config AODV_V2V_Ping]
-description = "Simulasi routing AODV V2V menggunakan Ping (ICMP) antar kendaraan bergerak"
+description = "V2V AODV routing simulation using ICMP Ping between moving vehicles"
 
 *.node[0].numApps = 1
 *.node[0].app[0].typename = "PingApp"
@@ -53,23 +53,23 @@ description = "Simulasi routing AODV V2V menggunakan Ping (ICMP) antar kendaraan
 *.node[*].numApps = 0
 ```
 
-#### Alur & Karakteristik:
-1. **Pengirim (`node[0]`)**: Mengirim paket ICMP Echo Request berukuran $56\text{ Byte}$ setiap $1\text{ detik}$ ke Mobil 1.
-2. **Penerima (`node[1]`)**: Merespons dengan paket ICMP Echo Reply.
-3. **Node Perantara (`node[2..N]`)**: Beroperasi murni sebagai *router forwarder* AODV.
-4. **Tujuan Evaluasi**:
-   - Memvalidasi pembentukan rute simetris dua arah (maju dan mundur).
-   - Mengukur latensi inisiasi rute pertama kali (saat RREQ/RREP berlangsung).
-   - Mengamati fluktuasi latensi *Round-Trip Time* (RTT) saat kedua mobil saling menjauh di jalan raya.
+#### Behavior & Dynamics:
+1. **Source (`node[0]`)**: Sends $56\text{-byte}$ ICMP Echo Requests once per second to Vehicle 1.
+2. **Destination (`node[1]`)**: Responds with ICMP Echo Replies.
+3. **Relay Vehicles (`node[2..N]`)**: Operate purely as AODV packet forwarders.
+4. **Primary Evaluation Metrics**:
+   - Validates symmetric two-way route establishment (forward and reverse paths).
+   - Measures initial route discovery latency (RREQ propagation and RREP return).
+   - Tracks Round-Trip Time (RTT) variations as cars move dynamically through the road network.
 
 ---
 
-### Skenario 2: `[Config AODV_V2V_UDP]`
-*Pengujian Transmisi Data Kontinu Antar Kendaraan Bergerak*
+### Scenario 2: `[Config AODV_V2V_UDP]`
+*Continuous Unidirectional Data Streaming Across Dynamic Topologies*
 
 ```ini
 [Config AODV_V2V_UDP]
-description = "Simulasi routing AODV V2V pengiriman paket data UDP antar kendaraan bergerak"
+description = "V2V AODV routing simulation with continuous UDP data transmission"
 
 *.node[1].numApps = 1
 *.node[1].app[0].typename = "UdpSink"
@@ -87,28 +87,28 @@ description = "Simulasi routing AODV V2V pengiriman paket data UDP antar kendara
 *.node[*].numApps = 0
 ```
 
-#### Alur & Karakteristik:
-1. **Aliran Data Satu Arah**: Mobil 0 secara kontinu mengirim paket data UDP sebesar $512\text{ Byte}$ ke Mobil 1 pada port 5000.
-2. **Uji Ketahanan Rute Dinamis**: Berbeda dengan ICMP ping yang menunggu balasan, UDP terus menyemprotkan data. Jika mobil perantara berbelok di persimpangan dan memutus rute, paket data akan tertahan di buffer AODV sementara proses *Local Repair* atau *RREQ rediscovery* dipicu.
-3. **Tujuan Evaluasi**:
-   - Mengukur *Packet Delivery Ratio* (PDR): persentase paket yang berhasil sampai ke `UdpSink`.
-   - Mengukur *Throughput* rata-rata ($kbps$).
-   - Menganalisis *packet drop* saat transisi putus-sambung rute (*route link breakage*).
+#### Behavior & Dynamics:
+1. **Continuous Data Stream**: Vehicle 0 transmits constant bitrate (CBR) $512\text{-byte}$ UDP packets to Vehicle 1 at port 5000.
+2. **Mobility Stress Test**: Unlike Ping, which pauses between requests, UDP streams packets continuously. When an intermediate relay turns at an intersection, buffered packets are held while AODV performs route rediscovery.
+3. **Primary Evaluation Metrics**:
+   - **Packet Delivery Ratio (PDR)**: Percentage of transmitted UDP packets received by `UdpSink`.
+   - **Average Throughput** ($kbps$).
+   - Packet drop frequency during topology breakages.
 
 ---
 
-### Skenario 3: `[Config AODV_V2I_RSU]`
-*Pengujian Komunikasi Kendaraan-ke-Infrastruktur (Telemetri Cerdas Kota)*
+### Scenario 3: `[Config AODV_V2I_RSU]`
+*Vehicle-to-Infrastructure Telemetry Reporting*
 
 ```ini
 [Config AODV_V2I_RSU]
-description = "Simulasi routing AODV V2I ke Road-Side Unit (RSU) statis"
+description = "V2I AODV routing simulation to a static Road-Side Unit (RSU)"
 
 *.numRsu = 1
 
 *.rsu[0].mobility.typename = "StationaryMobility"
-*.rsu[0].mobility.initialX = 1025m
-*.rsu[0].mobility.initialY = 870m
+*.rsu[0].mobility.initialX = 1040m
+*.rsu[0].mobility.initialY = 868m
 *.rsu[0].mobility.initialZ = 5m
 *.rsu[0].mobility.initFromDisplayString = false
 
@@ -127,23 +127,23 @@ description = "Simulasi routing AODV V2I ke Road-Side Unit (RSU) statis"
 *.node[*].app[0].startTime = uniform(2s, 5s)
 ```
 
-#### Alur & Karakteristik:
-1. **RSU Terpusat**: Ditempatkan di titik koordinat persimpangan strategis $(X=1025\text{m}, Y=870\text{m})$ dengan daya pancar tinggi $100\text{ mW}$ ($\approx 718\text{ m}$ radius).
-2. **Pelaporan Masal (*Many-to-One*)**: Seluruh armada mobil (`node[*]`) yang melintas di jalan raya secara periodik ($2 \sim 4\text{ detik}$) mengirimkan paket telemetri status kendaraan ($256\text{ Byte}$) menuju RSU.
-3. **Tujuan Evaluasi**:
-   - Menguji performa routing saat banyak sumber secara serentak mencari rute ke tujuan yang sama (*Hotspot Destination*).
-   - Mengamati degradasi performa akibat tabrakan paket (*packet collision*) di sekitar zona RSU.
-   - Mengukur area cakupan efektif layanan infrastruktur pintar.
+#### Behavior & Dynamics:
+1. **Central RSU**: Positioned at a central urban intersection with high transmission power ($100\text{ mW}$, $\approx 718\text{ m}$ radius).
+2. **Many-to-One Uplink**: Every moving vehicle in the city periodically ($2 \sim 4\text{ seconds}$) sends telemetry packets ($256\text{ bytes}$) toward the RSU.
+3. **Primary Evaluation Metrics**:
+   - Multi-source convergence and channel contention near the RSU.
+   - Aggregate network throughput and packet collision degradation.
+   - Multi-hop mesh aggregation radius.
 
 ---
 
-### Skenario 4: `[Config AODV_HelloMessages]`
-*Evaluasi Dampak Protokol HELLO Periodik terhadap Routing Overhead*
+### Scenario 4: `[Config AODV_HelloMessages]`
+*Evaluating Periodic HELLO Beacons on Routing Overhead*
 
 ```ini
 [Config AODV_HelloMessages]
 extends = AODV_V2V_UDP
-description = "AODV dengan HELLO message periodik (RFC 3561) untuk pemeliharaan tetangga"
+description = "AODV with periodic HELLO messages (RFC 3561) for neighbor sensing"
 
 **.aodv.useHelloMessages = true
 **.aodv.helloInterval = 1s
@@ -151,23 +151,23 @@ description = "AODV dengan HELLO message periodik (RFC 3561) untuk pemeliharaan 
 **.aodv.activeRouteTimeout = 3s
 ```
 
-#### Alur & Karakteristik:
-1. Mewarisi seluruh pengaturan `AODV_V2V_UDP`, namun mengaktifkan transmisi broadcast berkala paket *AODV HELLO*.
-2. Setiap node menyiarkan pesan HELLO setiap $1\text{ detik}$. Jika tetangga tidak mengirim HELLO selama $2 \times 1\text{s} = 2\text{ detik}$, rute langsung diputus tanpa menunggu kegagalan pengiriman paket data MAC.
-3. **Tujuan Evaluasi**:
-   - Membandingkan konsumsi *bandwidth* kontrol (*Routing Overhead*) antara mekanisme berbasis HELLO vs berbasis umpan balik ACK MAC layer.
-   - Mengamati apakah deteksi tetangga yang lebih proaktif mampu mempercepat pemulihan rute atau justru membebani kanal nirkabel.
+#### Behavior & Dynamics:
+1. Inherits all parameters from `AODV_V2V_UDP`, but enables RFC 3561 periodic HELLO broadcasts.
+2. Nodes broadcast HELLO messages every $1\text{ second}$. If 2 consecutive HELLOs are missed ($2\text{ seconds}$), neighbor links are marked broken without waiting for MAC-layer transmission failures.
+3. **Primary Evaluation Metrics**:
+   - **Normalized Routing Overhead (NRO)**: Compares bandwidth consumed by HELLO control traffic versus reactive MAC ACK feedback.
+   - Route repair latency under active neighbor sensing.
 
 ---
 
-## 3. Matriks Perbandingan Parameter Skenario
+## 3. Comparative Benchmark Matrix
 
 | Parameter | `AODV_V2V_Ping` | `AODV_V2V_UDP` | `AODV_V2I_RSU` | `AODV_HelloMessages` |
 |---|:---:|:---:|:---:|:---:|
-| **Pola Komunikasi** | V2V (1 ke 1) | V2V (1 ke 1) | V2I ($N$ ke 1) | V2V (1 ke 1) |
-| **Protokol Lapisan 4** | ICMP | UDP | UDP | UDP |
-| **Ukuran Payload** | $56\text{ Byte}$ | $512\text{ Byte}$ | $256\text{ Byte}$ | $512\text{ Byte}$ |
-| **Interval Pengiriman** | $1{,}0\text{s}$ tetap | $1{,}0\text{s}$ tetap | `uniform(2s, 4s)` | $1{,}0\text{s}$ tetap |
-| **Jumlah RSU Aktif** | $0$ | $0$ | $1$ | $0$ |
-| **Pesan AODV HELLO** | Nonaktif | Nonaktif | Nonaktif | **Aktif ($1\text{s}$)** |
-| **Fokus Evaluasi** | RTT & Loss Latency | PDR & Throughput | Skalabilitas Jaringan | Overhead Kontrol Kanal |
+| **Communication Paradigm** | V2V (1-to-1) | V2V (1-to-1) | V2I ($N$-to-1) | V2V (1-to-1) |
+| **Transport Layer Protocol** | ICMP | UDP | UDP | UDP |
+| **Application Payload Size** | $56\text{ Bytes}$ | $512\text{ Bytes}$ | $256\text{ Bytes}$ | $512\text{ Bytes}$ |
+| **Transmission Interval** | $1.0\text{s}$ constant | $1.0\text{s}$ constant | `uniform(2s, 4s)` | $1.0\text{s}$ constant |
+| **Active RSUs** | $0$ | $0$ | $1$ | $0$ |
+| **AODV HELLO Beacons** | Disabled | Disabled | Disabled | **Enabled ($1\text{s}$)** |
+| **Core Research Focus** | RTT & Discovery Latency | PDR & Throughput | Scalability & Contention | Control Channel Overhead |
