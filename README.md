@@ -1,6 +1,3 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/sommer/veins/master/doc/veins.png" alt="VANET Logo" width="100" onerror="this.style.display='none'"/>
-</p>
 
 <h1 align="center">🚗 VANET-AODV: Vehicular Ad-Hoc Network Simulation Testbed</h1>
 
