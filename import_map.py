@@ -121,6 +121,10 @@ def format_routes(input_rou_file, output_all_file, output_active_file, num_activ
     for k, v in root.attrib.items():
         all_root.attrib[k] = v
 
+    # Add vehicle type definition (required by SUMO for veh_passenger)
+    vtype = ET.Element("vType", {"id": "veh_passenger", "vClass": "passenger"})
+    all_root.append(vtype)
+
     for idx, v in enumerate(valid_vehicles):
         v.set("id", str(idx))
         v.set("type", "veh_passenger")
@@ -138,6 +142,9 @@ def format_routes(input_rou_file, output_all_file, output_active_file, num_activ
     active_root = ET.Element("routes")
     for k, v in root.attrib.items():
         active_root.attrib[k] = v
+
+    # Add vehicle type definition (required by SUMO for veh_passenger)
+    active_root.append(ET.Element("vType", {"id": "veh_passenger", "vClass": "passenger"}))
 
     for v in all_root.findall("vehicle")[:active_count]:
         active_root.append(v)

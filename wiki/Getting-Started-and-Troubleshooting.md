@@ -98,6 +98,7 @@ cd vanet_aodv
 | **`Address already in use: 9999`** | An orphaned `veins_launchd` or SUMO process is still bound to the port. | Terminate the process: `fuser -k 9999/tcp` or `pkill -f veins_launchd`. |
 | **`sumo-gui: cannot open display`** | Attempting to launch the GUI over SSH without X11 forwarding enabled. | Use headless mode (`run_cmd.sh`) or connect with `ssh -X`. |
 | **`error while loading shared libraries: libINET.so`** | INET dynamic libraries are missing from `LD_LIBRARY_PATH`. | Run `source setenv` in the root workspace directory. |
+| **`vehicle type 'veh_passenger' not known` / `read past end of byte buffer`** | SUMO route file lacks `<vType>` definition, causing SUMO to exit immediately upon launch. | Ensure `<vType id="veh_passenger" vClass="passenger"/>` is present at the top of `maps.rou.xml` or run `./set_nodes.py <N>`. |
 | **`Vehicle ID '0' not known` / Cars stationary** | Route definitions are out of sync or contain staggered start times. | Run `./import_map.sh map.osm 20` or `./set_nodes.py 20` in `vanet_aodv/` to regenerate simultaneous $t=0\text{s}$ departures. |
 | **Simulation runs slowly in Qtenv** | Animation rendering overhead is throttling event processing. | Switch Qtenv mode from **Run** to **Fast (F6)** or **Express (F7)**. |
 

@@ -35,6 +35,14 @@ def set_nodes(n):
     for k, v in root.attrib.items():
         new_root.attrib[k] = v
 
+    # Preserve existing vType definitions or add default veh_passenger vType
+    vtypes = root.findall("vType")
+    if vtypes:
+        for vt in vtypes:
+            new_root.append(vt)
+    else:
+        new_root.append(ET.Element("vType", {"id": "veh_passenger", "vClass": "passenger"}))
+
     for v in vehicles[:n]:
         v.set("depart", "0.00")
         v.set("departLane", "best")
@@ -44,6 +52,11 @@ def set_nodes(n):
     new_tree = ET.ElementTree(new_root)
     ET.indent(new_tree, space="    ", level=0)
     new_tree.write(target_file, encoding="utf-8", xml_declaration=True)
+
+    # Also synchronize root maps.rou.xml if present
+    root_target_file = os.path.join(base_dir, "..", "maps.rou.xml")
+    if os.path.exists(root_target_file):
+        new_tree.write(root_target_file, encoding="utf-8", xml_declaration=True)
 
     print(f"[✓] Successfully updated maps.rou.xml to {n} vehicles (all departing at t=0.00s).")
 
