@@ -9,6 +9,13 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
+# Auto-source OMNeT++ environment if opp_run is not in PATH
+if ! command -v opp_run &> /dev/null; then
+    if [ -f "${ROOT_DIR}/../omnetpp-6.4.0/setenv" ]; then
+        source "${ROOT_DIR}/../omnetpp-6.4.0/setenv"
+    fi
+fi
+
 if [ -d "${ROOT_DIR}/inet/src" ]; then
     INET_DIR="${ROOT_DIR}/inet"
 elif [ -d "${ROOT_DIR}/../inet4.5/src" ]; then

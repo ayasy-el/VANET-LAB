@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>vanet_gpsr</name>
+	<comment>VANET GPSR Routing Simulation with Veins, INET, and SUMO</comment>
+	<projects>
+		<project>inet</project>
+		<project>veins</project>
+		<project>veins_inet</project>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.omnetpp.scave.builder.vectorfileindexer</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>org.omnetpp.main.omnetppnature</nature>
+	</natures>
+</projectDescription>

@@ -5,6 +5,7 @@
 *.sca
 results/
 vanet_aodv/results/
+vanet_gpsr/results/
 
 # Build artifacts
 out/

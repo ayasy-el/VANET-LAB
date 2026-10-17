@@ -10,12 +10,13 @@ Welcome to the official documentation portal (**Wiki**) for the **VANET-AODV** s
 |---|---|
 | [**1. Architecture & Design**](Architecture-and-Design.md) | Quad-simulator integration (OMNeT++, INET, Veins, SUMO), NED module hierarchy (`Scenario`, `VeinsAodvCar`, `VeinsAodvRSU`), and TraCI synchronization loop. |
 | [**2. AODV Routing Protocol**](Routing-Protocol-AODV.md) | RFC 3561 mechanisms in vehicular networks (RREQ broadcast, RREP unicast, RERR route errors, Expanding Ring Search, and HELLO messages). |
-| [**3. Physical & MAC Layers (IEEE 802.11p)**](Physical-and-MAC-Layers.md) | DSRC 5.9 GHz spectrum, OFDM modulation, Free-Space Path Loss derivation, transmission radius calculation, and antenna offsets. |
-| [**4. Traffic Mobility & Road Map**](Traffic-Mobility-and-Map.md) | OpenStreetMap processing, UTM cartesian coordinates, route definitions (`maps.rou.xml`), `set_nodes.py`, and the `import_map.sh` pipeline. |
-| [**5. Simulation Scenarios Guide**](Simulation-Scenarios.md) | In-depth parameters and behaviors of the 4 benchmark scenarios (`AODV_V2V_Ping`, `AODV_V2V_UDP`, `AODV_V2I_RSU`, and `AODV_HelloMessages`). |
-| [**6. GUI & Visualization Guide (Qtenv)**](GUI-and-Visualization-Guide.md) | Visual semantics: physical radio ranges (blue), 1-hop MAC links (gold), AODV routes (green), and propagation ray filtering. |
-| [**7. Data Analysis & Performance Metrics**](Data-Analysis-and-Metrics.md) | Network performance formulas (PDR, RTT latency, throughput, routing overhead), scalar (`.sca`) and vector (`.vec`) data extraction. |
-| [**8. Getting Started & Troubleshooting**](Getting-Started-and-Troubleshooting.md) | System requirements, execution instructions for CLI/GUI modes, and solutions to common errors. |
+| [**3. GPSR Routing Protocol**](Routing-Protocol-GPSR.md) | Geographic position-based routing (Greedy forwarding, perimeter void traversal via GG/RNG, periodic beaconing, and stateless relaying). |
+| [**4. Physical & MAC Layers (IEEE 802.11p)**](Physical-and-MAC-Layers.md) | DSRC 5.9 GHz spectrum, OFDM modulation, Free-Space Path Loss derivation, transmission radius calculation, and antenna offsets. |
+| [**5. Traffic Mobility & Road Map**](Traffic-Mobility-and-Map.md) | OpenStreetMap processing, UTM cartesian coordinates, route definitions (`maps.rou.xml`), `set_nodes.py`, and the `import_map.sh` pipeline. |
+| [**6. Simulation Scenarios Guide**](Simulation-Scenarios.md) | In-depth parameters and behaviors of benchmark scenarios across AODV and GPSR workspaces. |
+| [**7. GUI & Visualization Guide (Qtenv)**](GUI-and-Visualization-Guide.md) | Visual semantics: physical radio ranges (blue), 1-hop MAC links (gold), network routes (green/cyan), and propagation ray filtering. |
+| [**8. Data Analysis & Performance Metrics**](Data-Analysis-and-Metrics.md) | Network performance formulas (PDR, RTT latency, throughput, routing overhead), scalar (`.sca`) and vector (`.vec`) data extraction. |
+| [**9. Getting Started & Troubleshooting**](Getting-Started-and-Troubleshooting.md) | System requirements, execution instructions for CLI/GUI modes, and solutions to common errors. |
 
 ---
 
@@ -39,7 +40,7 @@ This project unites industry-standard discrete-event and microscopic traffic sim
 +-------------------------------------------------------------------------+
 |                           INET Framework 4.5                            |
 |  - Application Layer : PingApp, UdpBasicApp, UdpSink                    |
-|  - Routing Layer     : AODV Routing Engine (RFC 3561)                   |
+|  - Routing Layer     : AODV (RFC 3561) & GPSR (Position-Based)          |
 |  - Network Layer     : IPv4 Stack (10.0.0.0/8), Global ARP              |
 |  - Link/MAC Layer    : IEEE 802.11p NIC                                 |
 |  - Physical Layer    : Ieee80211DimensionalRadio (5.9 GHz DSRC)         |

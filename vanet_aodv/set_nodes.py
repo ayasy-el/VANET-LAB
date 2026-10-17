@@ -53,10 +53,14 @@ def set_nodes(n):
     ET.indent(new_tree, space="    ", level=0)
     new_tree.write(target_file, encoding="utf-8", xml_declaration=True)
 
-    # Also synchronize root maps.rou.xml if present
+    # Also synchronize root and sibling workspaces if present
     root_target_file = os.path.join(base_dir, "..", "maps.rou.xml")
     if os.path.exists(root_target_file):
         new_tree.write(root_target_file, encoding="utf-8", xml_declaration=True)
+
+    gpsr_target_file = os.path.join(base_dir, "..", "vanet_gpsr", "maps.rou.xml")
+    if os.path.exists(gpsr_target_file):
+        new_tree.write(gpsr_target_file, encoding="utf-8", xml_declaration=True)
 
     print(f"[✓] Successfully updated maps.rou.xml to {n} vehicles (all departing at t=0.00s).")
 

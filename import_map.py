@@ -37,7 +37,9 @@ import xml.etree.ElementTree as ET
 import re
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-VANET_DIR = os.path.join(ROOT_DIR, "vanet_aodv")
+VANET_AODV_DIR = os.path.join(ROOT_DIR, "vanet_aodv")
+VANET_GPSR_DIR = os.path.join(ROOT_DIR, "vanet_gpsr")
+VANET_DIR = VANET_AODV_DIR
 
 def locate_tool(name):
     """Searches for binary executable in PATH and venv."""
@@ -156,49 +158,59 @@ def format_routes(input_rou_file, output_all_file, output_active_file, num_activ
     return len(valid_vehicles), active_count
 
 def update_ned_and_ini(max_x, max_y, rsu_x, rsu_y):
-    """Updates Scenario.ned canvas and RSU coordinates in omnetpp.ini."""
+    """Updates Scenario.ned canvas and RSU coordinates in omnetpp.ini for all workspaces."""
     canvas_w = max(2500, int(max_x * 1.15))
     canvas_h = max(2000, int(max_y * 1.15))
     rsu_x_int = int(rsu_x)
     rsu_y_int = int(rsu_y)
 
-    ned_file = os.path.join(VANET_DIR, "Scenario.ned")
-    if os.path.exists(ned_file):
-        with open(ned_file, "r") as f:
-            ned_content = f.read()
+    workspaces = [
+        (VANET_AODV_DIR, "VeinsAodvRSU"),
+        (VANET_GPSR_DIR, "VeinsGpsrRSU")
+    ]
 
-        ned_content = re.sub(
-            r'@display\("bgb=\d+,\d+"\);',
-            f'@display("bgb={canvas_w},{canvas_h}");',
-            ned_content
-        )
-        ned_content = re.sub(
-            r'rsu\[numRsu\]:\s*VeinsAodvRSU\s*\{[^}]*@display\("p=\d+,\d+"\);',
-            f'rsu[numRsu]: VeinsAodvRSU {{\n            @display("p={rsu_x_int},{rsu_y_int}");',
-            ned_content
-        )
-        with open(ned_file, "w") as f:
-            f.write(ned_content)
-        print(f"[✓] Updated Scenario.ned: Canvas ({canvas_w}x{canvas_h}), RSU display ({rsu_x_int}, {rsu_y_int}).")
+    for ws_dir, rsu_type in workspaces:
+        if not os.path.exists(ws_dir):
+            continue
 
-    ini_file = os.path.join(VANET_DIR, "omnetpp.ini")
-    if os.path.exists(ini_file):
-        with open(ini_file, "r") as f:
-            ini_content = f.read()
+        ws_name = os.path.basename(ws_dir)
+        ned_file = os.path.join(ws_dir, "Scenario.ned")
+        if os.path.exists(ned_file):
+            with open(ned_file, "r") as f:
+                ned_content = f.read()
 
-        ini_content = re.sub(
-            r'\*\.rsu\[0\]\.mobility\.initialX\s*=\s*\d+m',
-            f'*.rsu[0].mobility.initialX = {rsu_x_int}m',
-            ini_content
-        )
-        ini_content = re.sub(
-            r'\*\.rsu\[0\]\.mobility\.initialY\s*=\s*\d+m',
-            f'*.rsu[0].mobility.initialY = {rsu_y_int}m',
-            ini_content
-        )
-        with open(ini_file, "w") as f:
-            f.write(ini_content)
-        print(f"[✓] Updated omnetpp.ini: RSU physical coordinates ({rsu_x_int}m, {rsu_y_int}m).")
+            ned_content = re.sub(
+                r'@display\("bgb=\d+,\d+"\);',
+                f'@display("bgb={canvas_w},{canvas_h}");',
+                ned_content
+            )
+            ned_content = re.sub(
+                rf'rsu\[numRsu\]:\s*{rsu_type}\s*\{{[^}}]*@display\("p=\d+,\d+"\);',
+                f'rsu[numRsu]: {rsu_type} {{\n            @display("p={rsu_x_int},{rsu_y_int}");',
+                ned_content
+            )
+            with open(ned_file, "w") as f:
+                f.write(ned_content)
+            print(f"[✓] Updated {ws_name}/Scenario.ned: Canvas ({canvas_w}x{canvas_h}), RSU display ({rsu_x_int}, {rsu_y_int}).")
+
+        ini_file = os.path.join(ws_dir, "omnetpp.ini")
+        if os.path.exists(ini_file):
+            with open(ini_file, "r") as f:
+                ini_content = f.read()
+
+            ini_content = re.sub(
+                r'\*\.rsu\[0\]\.mobility\.initialX\s*=\s*\d+m',
+                f'*.rsu[0].mobility.initialX = {rsu_x_int}m',
+                ini_content
+            )
+            ini_content = re.sub(
+                r'\*\.rsu\[0\]\.mobility\.initialY\s*=\s*\d+m',
+                f'*.rsu[0].mobility.initialY = {rsu_y_int}m',
+                ini_content
+            )
+            with open(ini_file, "w") as f:
+                f.write(ini_content)
+            print(f"[✓] Updated {ws_name}/omnetpp.ini: RSU physical coordinates ({rsu_x_int}m, {rsu_y_int}m).")
 
 def generate_sumocfg(net_filename, rou_filename, sumocfg_path):
     """Generates standard maps.sumocfg configuration."""
@@ -320,8 +332,8 @@ def main():
     # 7. Generate sumocfg
     generate_sumocfg("maps.net.xml", "maps.rou.xml", tmp_sumocfg)
 
-    # 8. Synchronize to root and vanet_aodv
-    target_dirs = [ROOT_DIR, VANET_DIR]
+    # 8. Synchronize to root, vanet_aodv, and vanet_gpsr
+    target_dirs = [d for d in [ROOT_DIR, VANET_AODV_DIR, VANET_GPSR_DIR] if os.path.exists(d)]
     files_to_sync = [
         (tmp_net, "maps.net.xml"),
         (tmp_trips, "trips.trips.xml"),
@@ -351,8 +363,10 @@ def main():
     print(f" • OMNeT++ Canvas Size : {max(2500, int(max_x * 1.15))} x {max(2000, int(max_y * 1.15))}")
     print("")
     print(" The simulation is now ready to run:")
-    print("   1. Interactive GUI Mode : cd vanet_aodv && ./run_gui.sh")
-    print("   2. Headless CLI Mode    : cd vanet_aodv && ./run_cmd.sh AODV_V2V_Ping 30s")
+    print("   • AODV Workspace : cd vanet_aodv && ./run_gui.sh")
+    print("                      cd vanet_aodv && ./run_cmd.sh AODV_V2V_Ping 30s")
+    print("   • GPSR Workspace : cd vanet_gpsr && ./run_gui.sh")
+    print("                      cd vanet_gpsr && ./run_cmd.sh GPSR_V2V_Ping 30s")
     print("==================================================================")
 
 if __name__ == "__main__":

@@ -14,6 +14,7 @@
   <a href="https://veins.car2x.org/"><img src="https://img.shields.io/badge/Veins-5.3.1-orange.svg?style=flat-square" alt="Veins 5.3.1"/></a>
   <a href="https://eclipse.dev/sumo/"><img src="https://img.shields.io/badge/Eclipse%20SUMO-v1.x-555555.svg?style=flat-square" alt="Eclipse SUMO"/></a>
   <a href="https://datatracker.ietf.org/doc/html/rfc3561"><img src="https://img.shields.io/badge/Routing-AODV%20(RFC%203561)-blueviolet.svg?style=flat-square" alt="RFC 3561 AODV"/></a>
+  <a href="https://doi.org/10.1145/345910.345953"><img src="https://img.shields.io/badge/Routing-GPSR%20(Geographic)-teal.svg?style=flat-square" alt="GPSR Geographic"/></a>
   <a href="https://standards.ieee.org/ieee/802.11p/3929/"><img src="https://img.shields.io/badge/PHY%2FMAC-IEEE%20802.11p%20(5.9%20GHz)-e63946.svg?style=flat-square" alt="IEEE 802.11p"/></a>
   <img src="https://img.shields.io/badge/Documentation-Wiki%20Available-success.svg?style=flat-square" alt="Wiki"/>
   <img src="https://img.shields.io/badge/License-Academic%20%2F%20MIT-informational.svg?style=flat-square" alt="License"/>
@@ -208,34 +209,47 @@ source ../setenv
 
 ### 2. Interactive Graphical Mode (Qtenv)
 
-Launch the TraCI daemon with SUMO-GUI in your first terminal:
-```bash
-./run_sumo_launchd.sh
-```
+Launch the interactive OMNeT++ visualizer for either workspace:
 
-In a second terminal, start the interactive OMNeT++ visualizer:
+**AODV Workspace:**
 ```bash
 cd vanet_aodv
-
-# Launch default scenario (AODV_V2V_Ping):
-./run_gui.sh
-
-# Or select a specific scenario:
+./run_gui.sh                # Default: AODV_V2V_Ping
 ./run_gui.sh AODV_V2V_UDP
 ./run_gui.sh AODV_V2I_RSU
 ./run_gui.sh AODV_HelloMessages
 ```
 
+**GPSR Workspace:**
+```bash
+cd vanet_gpsr
+./run_gui.sh                # Default: GPSR_V2V_Ping
+./run_gui.sh GPSR_V2V_UDP
+./run_gui.sh GPSR_V2I_RSU
+./run_gui.sh GPSR_Planarization_RNG
+./run_gui.sh GPSR_Beacon_Tuning
+```
+
 ### 3. Headless Batch Mode (Cmdenv)
 
 For automated benchmarking or executions on remote servers without a display:
+
+**AODV Workspace:**
 ```bash
 cd vanet_aodv
-
-# Syntax: ./run_cmd.sh <SCENARIO_NAME> [DURATION]
 ./run_cmd.sh AODV_V2V_Ping 30s
 ./run_cmd.sh AODV_V2V_UDP 60s
 ./run_cmd.sh AODV_V2I_RSU 100s
+```
+
+**GPSR Workspace:**
+```bash
+cd vanet_gpsr
+./run_cmd.sh GPSR_V2V_Ping 30s
+./run_cmd.sh GPSR_V2V_UDP 60s
+./run_cmd.sh GPSR_V2I_RSU 100s
+./run_cmd.sh GPSR_Planarization_RNG 60s
+./run_cmd.sh GPSR_Beacon_Tuning 60s
 ```
 
 ---
@@ -266,9 +280,10 @@ Comprehensive technical documentation is maintained under the **`wiki/`** direct
 | [**Home**](wiki/Home.md) | Central documentation portal and index. |
 | [**Architecture & Design**](wiki/Architecture-and-Design.md) | Quad-simulator integration, NED hierarchy, and TraCI loop. |
 | [**AODV Routing Protocol**](wiki/Routing-Protocol-AODV.md) | RFC 3561 deep dive, expanding ring search, and routing tables. |
+| [**GPSR Routing Protocol**](wiki/Routing-Protocol-GPSR.md) | Geographic routing, greedy/perimeter forwarding, and GG/RNG. |
 | [**Physical & MAC Layers**](wiki/Physical-and-MAC-Layers.md) | Mathematical Friis derivation, 5.9 GHz DSRC, and antenna setup. |
 | [**Traffic & Mobility Model**](wiki/Traffic-Mobility-and-Map.md) | OSM geospatial mapping, UTM bounds, and simultaneous departures. |
-| [**Simulation Scenarios Guide**](wiki/Simulation-Scenarios.md) | Detailed parameter reference for all 4 benchmark scenarios. |
+| [**Simulation Scenarios Guide**](wiki/Simulation-Scenarios.md) | Detailed parameter reference for all AODV & GPSR scenarios. |
 | [**GUI Visualization Guide**](wiki/GUI-and-Visualization-Guide.md) | Runtime inspection guide, visual semantics, and filter explanations. |
 | [**Data Analysis & Metrics**](wiki/Data-Analysis-and-Metrics.md) | `opp_scavetool` extraction procedures and automated Python parsers. |
 | [**Execution & Troubleshooting**](wiki/Getting-Started-and-Troubleshooting.md) | Step-by-step setup and solutions to common simulation errors. |
@@ -293,13 +308,14 @@ VANET-LAB/
 │   ├── Home.md
 │   ├── Architecture-and-Design.md
 │   ├── Routing-Protocol-AODV.md
+│   ├── Routing-Protocol-GPSR.md
 │   ├── Physical-and-MAC-Layers.md
 │   ├── Traffic-Mobility-and-Map.md
 │   ├── Simulation-Scenarios.md
 │   ├── GUI-and-Visualization-Guide.md
 │   ├── Data-Analysis-and-Metrics.md
 │   └── Getting-Started-and-Troubleshooting.md
-├── vanet_aodv/            # OMNeT++ SIMULATION WORKSPACE
+├── vanet_aodv/            # OMNeT++ SIMULATION WORKSPACE (AODV)
 │   ├── Scenario.ned       # Top-level network scenario topology
 │   ├── VeinsAodvCar.ned   # Mobile vehicular node extending AodvRouter
 │   ├── VeinsAodvRSU.ned   # Static Road-Side Unit infrastructure node
@@ -307,6 +323,18 @@ VANET-LAB/
 │   ├── maps.rou.all.xml   # Master pool of vehicle routes
 │   ├── set_nodes.py       # Instant vehicle fleet density scaler CLI
 │   ├── run_cmd.sh         # Automated headless command-line runner
+│   ├── run_gui.sh         # Interactive GUI user interface runner
+│   └── results/           # Simulation telemetry output (.sca, .vec)
+└── vanet_gpsr/            # OMNeT++ SIMULATION WORKSPACE (GPSR)
+    ├── Scenario.ned       # Top-level network scenario topology
+    ├── VeinsGpsrCar.ned   # Mobile vehicular node extending GpsrRouter
+    ├── VeinsGpsrRSU.ned   # Static Road-Side Unit infrastructure node
+    ├── omnetpp.ini        # GPSR parameters, GG/RNG modes, & benchmarks
+    ├── maps.rou.all.xml   # Master pool of vehicle routes
+    ├── set_nodes.py       # Instant vehicle fleet density scaler CLI
+    ├── run_cmd.sh         # Automated headless command-line runner
+    ├── run_gui.sh         # Interactive GUI user interface runner
+    └── results/           # Simulation telemetry output (.sca, .vec)
 │   ├── run_gui.sh         # Automated interactive graphical runner
 │   └── results/           # Output directory for simulation records (*.sca, *.vec)
 └── README.md              # Project documentation gateway

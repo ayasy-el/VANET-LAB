@@ -171,3 +171,43 @@ description = "AODV with periodic HELLO messages (RFC 3561) for neighbor sensing
 | **Active RSUs** | $0$ | $0$ | $1$ | $0$ |
 | **AODV HELLO Beacons** | Disabled | Disabled | Disabled | **Enabled ($1\text{s}$)** |
 | **Core Research Focus** | RTT & Discovery Latency | PDR & Throughput | Scalability & Contention | Control Channel Overhead |
+
+---
+
+## 4. GPSR Simulation Scenarios (`vanet_gpsr/omnetpp.ini`)
+
+GPSR scenarios evaluate geographic forwarding performance under vehicular mobility:
+
+```
+                           ┌───────────────────────────┐
+                           │      [Config General]     │
+                           │   5.9GHz Radio, Visual,   │
+                           │     GPSR Base, TraCI      │
+                           └─────────────┬─────────────┘
+                                         │
+         ┌───────────────────────────────┼───────────────────────────────┐
+         ▼                               ▼                               ▼
+┌──────────────────┐            ┌──────────────────┐            ┌──────────────────┐
+│  GPSR_V2V_Ping   │            │   GPSR_V2V_UDP   │            │   GPSR_V2I_RSU   │
+│  V2V Ping (ICMP) │            │  V2V Stream UDP  │            │  V2I Telemetry   │
+└──────────────────┘            └────────┬─────────┘            └──────────────────┘
+                                         │ extends
+                         ┌───────────────┴───────────────┐
+                         ▼                               ▼
+              ┌─────────────────────┐         ┌─────────────────────┐
+              │GPSR_Planarization_RNG│        │ GPSR_Beacon_Tuning  │
+              │  RNG Planarization  │         │ Fast Beaconing 0.5s │
+              └─────────────────────┘         └─────────────────────┘
+```
+
+### GPSR Benchmark Matrix:
+
+| Parameter | `GPSR_V2V_Ping` | `GPSR_V2V_UDP` | `GPSR_V2I_RSU` | `GPSR_Planarization_RNG` | `GPSR_Beacon_Tuning` |
+|---|:---:|:---:|:---:|:---:|:---:|
+| **Paradigm** | V2V (1-to-1) | V2V (1-to-1) | V2I ($N$-to-1) | V2V (1-to-1) | V2V (1-to-1) |
+| **Transport** | ICMP | UDP | UDP | UDP | UDP |
+| **Payload** | $56\text{ B}$ | $512\text{ B}$ | $256\text{ B}$ | $512\text{ B}$ | $512\text{ B}$ |
+| **Interval** | $1.0\text{s}$ | $1.0\text{s}$ | `uniform(2s, 4s)` | $1.0\text{s}$ | $1.0\text{s}$ |
+| **Planarization** | GG (Gabriel Graph) | GG | GG | **RNG (Relative Neighbor)** | GG |
+| **Beacon Interval** | $1.0\text{s}$ | $1.0\text{s}$ | $1.0\text{s}$ | $1.0\text{s}$ | **$0.5\text{s}$** |
+| **Focus** | Zero-discovery RTT | Geographic PDR | Spatial Convergence | Void recovery modes | High-speed beaconing |
