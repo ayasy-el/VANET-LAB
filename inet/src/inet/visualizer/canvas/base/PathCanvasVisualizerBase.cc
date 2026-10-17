@@ -101,9 +101,10 @@ void PathCanvasVisualizerBase::refreshDisplay() const
             segments.push_back(LineSegment(fromPosition + shift, toPosition + shift));
         }
         if (!pathValid) {
-            pathCanvasVisualization->figure->setPoints(std::vector<cFigure::Point>());
+            pathCanvasVisualization->figure->setVisible(false);
             continue;
         }
+        pathCanvasVisualization->figure->setVisible(true);
         std::vector<cFigure::Point> points;
         for (size_t index = 0; index < segments.size(); index++) {
             if (index == 0)

@@ -105,9 +105,10 @@ void TreeCanvasVisualizerBase::refreshDisplay() const
                 segments.push_back(LineSegment(fromPosition + shift, toPosition + shift));
             }
             if (!pathValid) {
-                figure->setPoints(std::vector<cFigure::Point>());
+                figure->setVisible(false);
                 continue;
             }
+            figure->setVisible(true);
             std::vector<cFigure::Point> points;
             for (size_t index = 0; index < segments.size(); index++) {
                 if (index == 0)

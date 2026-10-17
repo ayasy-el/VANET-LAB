@@ -32,6 +32,11 @@ void LabeledPolylineFigure::setPoints(const std::vector<cFigure::Point>& points)
 void LabeledPolylineFigure::updateLabelPosition()
 {
     auto points = polylineFigure->getPoints();
+    if (points.size() < 2) {
+        panelFigure->setVisible(false);
+        return;
+    }
+    panelFigure->setVisible(true);
     int index = (points.size() - 1) / 2;
     auto position = (points[index] + points[index + 1]) / 2;
     auto direction = points[index + 1] - points[index];
