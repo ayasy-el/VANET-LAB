@@ -6,6 +6,9 @@
 results/
 vanet_aodv/results/
 vanet_gpsr/results/
+*.png
+plot_qos.py
+*/plot_qos.py
 
 # Build artifacts
 out/
