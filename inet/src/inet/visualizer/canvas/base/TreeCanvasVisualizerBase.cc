@@ -89,15 +89,24 @@ void TreeCanvasVisualizerBase::refreshDisplay() const
             auto figure = treeCanvasVisualization->figures[i];
             auto moduleIds = path.moduleIds;
             std::vector<LineSegment> segments;
+            bool pathValid = true;
             for (size_t index = 1; index < moduleIds.size(); index++) {
                 auto fromModuleId = moduleIds[index - 1];
                 auto toModuleId = moduleIds[index];
                 auto fromModule = simulation->getModule(fromModuleId);
                 auto toModule = simulation->getModule(toModuleId);
+                if (fromModule == nullptr || toModule == nullptr) {
+                    pathValid = false;
+                    break;
+                }
                 auto fromPosition = getContactPosition(fromModule, getPosition(toModule), lineContactMode, lineContactSpacing);
                 auto toPosition = getContactPosition(toModule, getPosition(fromModule), lineContactMode, lineContactSpacing);
                 auto shift = lineManager->getLineShift(fromModuleId, toModuleId, fromPosition, toPosition, lineShiftMode, path.shiftOffsets[index - 1]) * lineShift;
                 segments.push_back(LineSegment(fromPosition + shift, toPosition + shift));
+            }
+            if (!pathValid) {
+                figure->setPoints(std::vector<cFigure::Point>());
+                continue;
             }
             std::vector<cFigure::Point> points;
             for (size_t index = 0; index < segments.size(); index++) {

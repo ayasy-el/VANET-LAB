@@ -25,6 +25,7 @@
 #include "inet/linklayer/common/InterfaceTag_m.h"
 #include "inet/linklayer/common/MacAddressTag_m.h"
 #include "inet/networklayer/arp/ipv4/ArpPacket_m.h"
+#include "inet/networklayer/arp/ipv4/GlobalArp.h"
 #include "inet/networklayer/common/DscpTag_m.h"
 #include "inet/networklayer/common/EcnTag_m.h"
 #include "inet/networklayer/common/FragmentationTag_m.h"
@@ -1016,6 +1017,11 @@ void Ipv4::sendDatagramToOutput(Packet *packet)
     else {
         MacAddress nextHopMacAddr = resolveNextHopMacAddress(packet, nextHopAddr, ie);
         if (nextHopMacAddr.isUnspecified()) {
+            if (dynamic_cast<GlobalArp *>(arp.get()) != nullptr) {
+                EV_WARN << "GlobalArp cannot resolve " << nextHopAddr << ", dropping packet: " << packet << endl;
+                delete packet;
+                return;
+            }
             EV_INFO << "Pending " << packet << " to ARP resolution.\n";
             pendingPackets[nextHopAddr].insert(packet);
         }

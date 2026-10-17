@@ -48,11 +48,13 @@ void RoutingTableCanvasVisualizer::refreshDisplay() const
         auto figure = routeCanvasVisualization->figure;
         auto sourceModule = simulation->getModule(routeVisualization->sourceModuleId);
         auto destinationModule = simulation->getModule(routeVisualization->destinationModuleId);
-        auto sourcePosition = getContactPosition(sourceModule, getPosition(destinationModule), lineContactMode, lineContactSpacing);
-        auto destinationPosition = getContactPosition(destinationModule, getPosition(sourceModule), lineContactMode, lineContactSpacing);
-        auto shift = lineManager->getLineShift(routeVisualization->sourceModuleId, routeVisualization->destinationModuleId, sourcePosition, destinationPosition, lineShiftMode, routeVisualization->shiftOffset) * lineShift;
-        figure->setStart(canvasProjection->computeCanvasPoint(sourcePosition + shift));
-        figure->setEnd(canvasProjection->computeCanvasPoint(destinationPosition + shift));
+        if (sourceModule != nullptr && destinationModule != nullptr) {
+            auto sourcePosition = getContactPosition(sourceModule, getPosition(destinationModule), lineContactMode, lineContactSpacing);
+            auto destinationPosition = getContactPosition(destinationModule, getPosition(sourceModule), lineContactMode, lineContactSpacing);
+            auto shift = lineManager->getLineShift(routeVisualization->sourceModuleId, routeVisualization->destinationModuleId, sourcePosition, destinationPosition, lineShiftMode, routeVisualization->shiftOffset) * lineShift;
+            figure->setStart(canvasProjection->computeCanvasPoint(sourcePosition + shift));
+            figure->setEnd(canvasProjection->computeCanvasPoint(destinationPosition + shift));
+        }
     }
 }
 

@@ -38,8 +38,12 @@ void VisualizerBase::initialize(int stage)
 
 Coord VisualizerBase::getPosition(const cModule *networkNode) const
 {
+    if (networkNode == nullptr)
+        return Coord::NIL;
     auto mobility = networkNode->getSubmodule("mobility");
     if (mobility == nullptr) {
+        if (networkNode->getParentModule() == nullptr)
+            return Coord::NIL;
         auto bounds = getSimulation()->getEnvir()->getSubmoduleBounds(networkNode);
         auto center = bounds.getCenter();
         return Coord(center.x, center.y, 0);
@@ -50,6 +54,8 @@ Coord VisualizerBase::getPosition(const cModule *networkNode) const
 
 Coord VisualizerBase::getContactPosition(const cModule *networkNode, const Coord& fromPosition, const char *contactMode, double contactSpacing) const
 {
+    if (networkNode == nullptr || networkNode->getParentModule() == nullptr)
+        return Coord::NIL;
     double zoomLevel = getEnvir()->getZoomLevel(networkNode->getParentModule());
     if (std::isnan(zoomLevel))
         zoomLevel = 1.0;

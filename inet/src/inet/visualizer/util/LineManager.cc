@@ -135,9 +135,12 @@ Coord LineManager::getLineShift(int sourceModuleId, int destinationModuleId, con
         shift *= shiftOffset - ((double)count - 1) / 2.0;
     }
 
-    double zoomLevel = cSimulation::getActiveEnvir()->getZoomLevel(cSimulation::getActiveSimulation()->getModule(sourceModuleId)->getParentModule());
-    if (!std::isnan(zoomLevel))
-        shift /= zoomLevel;
+    auto sourceModule = cSimulation::getActiveSimulation()->getModule(sourceModuleId);
+    if (sourceModule != nullptr && sourceModule->getParentModule() != nullptr) {
+        double zoomLevel = cSimulation::getActiveEnvir()->getZoomLevel(sourceModule->getParentModule());
+        if (!std::isnan(zoomLevel))
+            shift /= zoomLevel;
+    }
 
     return shift;
 }

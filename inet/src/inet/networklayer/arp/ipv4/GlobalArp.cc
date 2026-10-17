@@ -153,7 +153,6 @@ MacAddress GlobalArp::mapUnicastAddress(L3Address address)
             auto it = globalArpCache.find(ipv4Address);
             if (it != globalArpCache.end())
                 return it->second->networkInterface->getMacAddress();
-            throw cRuntimeError("GlobalArp does not support dynamic address resolution");
             return MacAddress::UNSPECIFIED_ADDRESS;
         }
 #endif
@@ -163,7 +162,6 @@ MacAddress GlobalArp::mapUnicastAddress(L3Address address)
             auto it = globalArpCache.find(ipv6Address);
             if (it != globalArpCache.end())
                 return it->second->networkInterface->getMacAddress();
-            throw cRuntimeError("GlobalArp does not support dynamic address resolution");
             return MacAddress::UNSPECIFIED_ADDRESS;
         }
 #endif
