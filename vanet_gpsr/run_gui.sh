@@ -2,37 +2,72 @@
 # ==============================================================================
 # GUI Interactive Execution Script (Qtenv)
 # VANET Routing Protocol GPSR (Veins + INET + SUMO)
+#
+# Usage: ./run_gui.sh [CONFIG] [extra opp_run options...]
+#   ./run_gui.sh GPSR_V2V_Ping
 # ==============================================================================
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+VANET_ROOT="${ROOT_DIR}"
+export VANET_ROOT
 
-# Auto-source OMNeT++ environment if opp_run is not in PATH
-if ! command -v opp_run &> /dev/null; then
-    if [ -f "${ROOT_DIR}/../omnetpp-6.4.0/setenv" ]; then
-        source "${ROOT_DIR}/../omnetpp-6.4.0/setenv"
-    fi
-fi
-
-if [ -d "${ROOT_DIR}/inet/src" ]; then
-    INET_DIR="${ROOT_DIR}/inet"
-elif [ -d "${ROOT_DIR}/../inet4.5/src" ]; then
-    INET_DIR="${ROOT_DIR}/../inet4.5"
-else
-    echo "ERROR: INET directory not found!"
-    exit 1
-fi
+# shellcheck source=../common_env.sh
+. "${ROOT_DIR}/common_env.sh"
 
 CONFIG="${1:-GPSR_V2V_Ping}"
+if [ $# -ge 1 ]; then shift 1; fi
+
+# Optional map selection: --map <a|b> picks the matching launchd config
+# (a -> maps.launchd.xml, b -> map2.launchd.xml).
+EXTRA_ARGS=()
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --map|-m)
+            MAP_NAME="$2"
+            shift 2
+            ;;
+        --map=*)
+            MAP_NAME="${1#--map=}"
+            shift
+            ;;
+        *)
+            EXTRA_ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+
+# Practicum naming: the matrix uses "a" and "b", while the launch configuration
+# files keep their original names (maps.launchd.xml / map2.launchd.xml).
+case "${MAP_NAME:-}" in
+    a|A|map_a) MAP_NAME="maps"; MAP_LABEL="Map A" ;;
+    b|B|map_b) MAP_NAME="map2"; MAP_LABEL="Map B" ;;
+    maps)      MAP_LABEL="Map A" ;;
+    map2)      MAP_LABEL="Map B" ;;
+    "")        ;;
+    *)         MAP_LABEL="${MAP_NAME}" ;;
+esac
+
+if [ -n "${MAP_NAME:-}" ]; then
+    if [ ! -f "${SCRIPT_DIR}/${MAP_NAME}.launchd.xml" ]; then
+        echo "ERROR: map '${MAP_NAME}' not found (no ${MAP_NAME}.launchd.xml)." >&2
+        exit 1
+    fi
+    echo "  Map           : ${MAP_LABEL} (${MAP_NAME})"
+    EXTRA_ARGS+=("--*.manager.launchConfig=xmldoc(\"${MAP_NAME}.launchd.xml\")")
+fi
 
 echo "=========================================================="
 echo "  VANET GPSR SIMULATION (GUI MODE - Qtenv)"
 echo "  Configuration: ${CONFIG}"
+echo "  SUMO         : $(command -v sumo-gui)"
 echo "=========================================================="
 
-# 1. Check / start veins_launchd if not running on port 9999
+cd "${SCRIPT_DIR}"
+
 STARTED_LAUNCHD=0
 if ! nc -z 127.0.0.1 9999 2>/dev/null; then
     echo "[+] Starting veins_launchd daemon on port 9999..."
@@ -55,14 +90,12 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# 2. Launch Qtenv GUI
 echo "[+] Opening Qtenv user interface..."
-cd "${SCRIPT_DIR}"
 
 opp_run \
-    -l "${ROOT_DIR}/veins_inet/src/veins_inet" \
-    -n ".:${ROOT_DIR}/veins_inet/src/veins_inet:${ROOT_DIR}/veins/src/veins:${INET_DIR}/src" \
-    -x "${INET_DIR}/.nedexclusions" \
+    "${OPP_LIBS[@]}" \
+    -n "${OPP_NED_PATH}" \
+    -x "${OPP_NED_EXCLUSIONS}" \
     -u Qtenv \
     -c "${CONFIG}" \
-    "$@"
+    "${EXTRA_ARGS[@]}"

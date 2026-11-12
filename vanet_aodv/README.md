@@ -77,15 +77,21 @@ The **`set_nodes.py`** utility adjusts the number of active vehicles running on 
 Designed for automated testing and batch benchmarking without a display:
 
 ```bash
-# Syntax: ./run_cmd.sh <SCENARIO_NAME> [DURATION]
+# Syntax: ./run_cmd.sh <SCENARIO_NAME> [DURATION] [--map <a|b>] [opp_run options]
 
-./run_cmd.sh AODV_V2V_Ping 30s
-./run_cmd.sh AODV_V2V_UDP 60s
+./run_cmd.sh AODV_V2V_Ping 40s
+./run_cmd.sh AODV_V2V_UDP 40s
 ./run_cmd.sh AODV_V2I_RSU 60s
 ./run_cmd.sh AODV_HelloMessages 60s
+
+# Run AODV on Map B instead (Praktikum 9):
+./run_cmd.sh AODV_V2V_Ping 40s --map b
 ```
 
-*The script automatically verifies and spawns the background `veins_launchd` daemon, runs the simulation, and terminates the daemon safely upon completion.*
+*The script sources `../common_env.sh` (OMNeT++, SUMO, INET/Veins libraries), verifies and spawns the background `veins_launchd` daemon, runs the simulation, and terminates the daemon safely upon completion.*
+
+**Default map:** Map A (`maps`). The Map B assets (`map2.*`, symlinks to
+`../maps/map_b/`) are also present, so `--map b` needs no file editing.
 
 ---
 

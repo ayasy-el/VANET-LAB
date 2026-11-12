@@ -200,12 +200,30 @@ cd vanet_aodv
 
 ### 1. Prerequisites & Environment Setup
 
-Ensure OMNeT++ 6.4, INET 4.5, Veins 5.3, and SUMO are installed and exported to your shell environment:
+Verified toolchain for this workspace:
 
-```bash
-cd /path/to/VANET-LAB
-source ../setenv
-```
+| Component | Version | Notes |
+|---|---|---|
+| OMNeT++ | 6.1 | `~/omnetpp-6.1` |
+| INET | 4.5.4 | compiled copy in `~/inet4.5` (or `VANET-LAB/inet`) |
+| Veins / veins_inet | 5.3.1 | compiled copy in `~/veins-5.3.1` (or `VANET-LAB/veins`) |
+| SUMO | **1.28** | `~/sumo-venv/bin` — the committed `.net.xml` files use vehicle classes that SUMO 1.18 (apt) rejects |
+
+`common_env.sh` resolves all of the above automatically (OMNeT++ `setenv`, a recent
+SUMO, and the INET/Veins/veins_inet `*.so` libraries), so no manual `source` is needed
+before running the scripts. If the frameworks live somewhere else, export
+`INET_ROOT` / `VEINS_ROOT` first.
+
+> **Veins patch required for SUMO >= 1.22.** Veins 5.3.1 only knows TraCI API versions
+> up to 21, while SUMO 1.28 reports version 22, which aborts the run with
+> *"TraCI server reports unsupported TraCI API version"*. The one-line fix is an extra
+> entry in `TraCICommandInterface::versionConfigs`
+> (`veins/src/veins/modules/mobility/traci/TraCICommandInterface.cc`):
+> ```cpp
+> {22, {22, TYPE_DOUBLE, TYPE_POLYGON, VAR_TIME}}, // since SUMO 1.22.0
+> ```
+> Rebuild `libveins` afterwards (`make -C veins/src`). See
+> `docs/PRAKTIKUM8_GPSR_MAP_B.md` for details.
 
 ### 2. Interactive Graphical Mode (Qtenv)
 
@@ -234,22 +252,45 @@ cd vanet_gpsr
 
 For automated benchmarking or executions on remote servers without a display:
 
-**AODV Workspace:**
+**AODV Workspace (Map A by default):**
 ```bash
 cd vanet_aodv
-./run_cmd.sh AODV_V2V_Ping 30s
-./run_cmd.sh AODV_V2V_UDP 60s
+./run_cmd.sh AODV_V2V_Ping 40s
+./run_cmd.sh AODV_V2V_UDP 40s
 ./run_cmd.sh AODV_V2I_RSU 100s
 ```
 
-**GPSR Workspace:**
+**GPSR Workspace (Map B by default):**
 ```bash
 cd vanet_gpsr
-./run_cmd.sh GPSR_V2V_Ping 30s
-./run_cmd.sh GPSR_V2V_UDP 60s
+./run_cmd.sh GPSR_V2V_Ping 40s
+./run_cmd.sh GPSR_V2V_UDP 40s
 ./run_cmd.sh GPSR_V2I_RSU 100s
-./run_cmd.sh GPSR_Planarization_RNG 60s
-./run_cmd.sh GPSR_Beacon_Tuning 60s
+./run_cmd.sh GPSR_Planarization_RNG 40s
+./run_cmd.sh GPSR_Beacon_Tuning 40s
+```
+
+**Practicum matrix — 2 maps x 2 routing protocols:**
+
+The protocol is the workspace directory, the map is the `--map` flag. Four
+combinations, one flag, no configuration files to duplicate:
+
+| | Map A (`maps`) | Map B (`map2`) |
+|---|---|---|
+| **AODV** | Praktikum 8 — `cd vanet_aodv && ./run_cmd.sh AODV_V2V_Ping 40s --map a` | Praktikum 9 — `cd vanet_aodv && ./run_cmd.sh AODV_V2V_Ping 40s --map b` |
+| **GPSR** | Praktikum 9 — `cd vanet_gpsr && ./run_cmd.sh GPSR_V2V_Ping 40s --map a` | Praktikum 8 — `cd vanet_gpsr && ./run_cmd.sh GPSR_V2V_Ping 40s --map b` |
+
+`--map a` is an alias of `--map maps` (Map A) and `--map b` of `--map map2`
+(Map B). Both workspaces ship both maps, use the same seed-set (OMNeT++ default,
+0) and the same route file per map, so any two cells of the matrix differ by
+exactly one variable.
+
+`*_V2I_RSU` stays outside the matrix: its RSU coordinates belong to Map A.
+
+**Extracting QoS metrics:**
+```bash
+./qos_report.py vanet_gpsr/results/GPSR_V2V_Ping-#0.sca
+./qos_report.py vanet_gpsr/results/GPSR_V2V_UDP-#0.sca
 ```
 
 ---

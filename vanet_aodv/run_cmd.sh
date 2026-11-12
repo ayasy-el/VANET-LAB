@@ -2,37 +2,80 @@
 # ==============================================================================
 # Headless Simulation Execution Script (Cmdenv)
 # VANET Routing Protocol AODV (Veins + INET + SUMO)
+#
+# Usage: ./run_cmd.sh [CONFIG] [SIM_TIME] [extra opp_run options...]
+#   ./run_cmd.sh AODV_V2V_Ping 40s
 # ==============================================================================
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+VANET_ROOT="${ROOT_DIR}"
+export VANET_ROOT
 
-# Auto-source OMNeT++ environment if opp_run is not in PATH
-if ! command -v opp_run &> /dev/null; then
-    if [ -f "${ROOT_DIR}/../omnetpp-6.4.0/setenv" ]; then
-        source "${ROOT_DIR}/../omnetpp-6.4.0/setenv"
-    fi
-fi
-
-if [ -d "${ROOT_DIR}/inet/src" ]; then
-    INET_DIR="${ROOT_DIR}/inet"
-elif [ -d "${ROOT_DIR}/../inet4.5/src" ]; then
-    INET_DIR="${ROOT_DIR}/../inet4.5"
-else
-    echo "ERROR: INET directory not found!"
-    exit 1
-fi
+# Resolves OMNeT++, SUMO and the INET/Veins/veins_inet shared libraries.
+# shellcheck source=../common_env.sh
+. "${ROOT_DIR}/common_env.sh"
 
 CONFIG="${1:-AODV_V2V_Ping}"
 SIM_TIME="${2:-60s}"
+# consume CONFIG and SIM_TIME only if they were actually given
+if [ $# -ge 2 ]; then shift 2; elif [ $# -eq 1 ]; then shift 1; fi
+
+# Optional map selection: --map <name> picks <name>.launchd.xml next to this ini.
+#   ./run_cmd.sh GPSR_V2V_Ping 40s --map maps    -> run on Map A
+#   ./run_cmd.sh GPSR_V2V_Ping 40s --map map2    -> run on Map B
+EXTRA_ARGS=()
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --map|-m)
+            MAP_NAME="$2"
+            shift 2
+            ;;
+        --map=*)
+            MAP_NAME="${1#--map=}"
+            shift
+            ;;
+        *)
+            EXTRA_ARGS+=("$1")
+            shift
+            ;;
+    esac
+done
+
+# Practicum naming: the matrix uses "a" and "b", while the launch configuration
+# files keep their original names (maps.launchd.xml / map2.launchd.xml).
+case "${MAP_NAME:-}" in
+    a|A|map_a) MAP_NAME="maps"; MAP_LABEL="Map A" ;;
+    b|B|map_b) MAP_NAME="map2"; MAP_LABEL="Map B" ;;
+    maps)      MAP_LABEL="Map A" ;;
+    map2)      MAP_LABEL="Map B" ;;
+    "")        ;;
+    *)         MAP_LABEL="${MAP_NAME}" ;;
+esac
+
+if [ -n "${MAP_NAME:-}" ]; then
+    if [ ! -f "${SCRIPT_DIR}/${MAP_NAME}.launchd.xml" ]; then
+        echo "ERROR: map '${MAP_NAME}' not found (no ${MAP_NAME}.launchd.xml)." >&2
+        exit 1
+    fi
+    echo "  Map           : ${MAP_LABEL} (${MAP_NAME})"
+    EXTRA_ARGS+=("--*.manager.launchConfig=xmldoc(\"${MAP_NAME}.launchd.xml\")")
+fi
 
 echo "=========================================================="
 echo "  VANET AODV SIMULATION"
 echo "  Configuration : ${CONFIG}"
 echo "  Sim Time Limit: ${SIM_TIME}"
+echo "  SUMO          : $(command -v sumo)"
+echo "  INET          : ${INET_DIR}"
+echo "  Veins         : ${VEINS_DIR}"
 echo "=========================================================="
+
+# veins_launchd resolves the <copy file="..."> entries relative to its own
+# working directory, so it must be started from the project directory.
+cd "${SCRIPT_DIR}"
 
 # 1. Check / start veins_launchd if not running on port 9999
 STARTED_LAUNCHD=0
@@ -59,16 +102,16 @@ trap cleanup EXIT
 
 # 2. Run OMNeT++ Cmdenv simulation
 echo "[+] Running opp_run (Cmdenv)..."
-cd "${SCRIPT_DIR}"
 
 opp_run \
-    -l "${ROOT_DIR}/veins_inet/src/veins_inet" \
-    -n ".:${ROOT_DIR}/veins_inet/src/veins_inet:${ROOT_DIR}/veins/src/veins:${INET_DIR}/src" \
-    -x "${INET_DIR}/.nedexclusions" \
+    "${OPP_LIBS[@]}" \
+    -n "${OPP_NED_PATH}" \
+    -x "${OPP_NED_EXCLUSIONS}" \
     -u Cmdenv \
     -c "${CONFIG}" \
     -r 0 \
-    --sim-time-limit="${SIM_TIME}"
+    --sim-time-limit="${SIM_TIME}" \
+    "${EXTRA_ARGS[@]}"
 
 echo ""
 echo "=========================================================="
