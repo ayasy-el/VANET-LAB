@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<!--
+  SUMO launch configuration for Map B (map2).
+
+  veins_launchd copies these files into a temporary run directory, therefore the
+  file names must stay flat (no "/" is allowed in <copy file="...">).  The map
+  assets themselves live in VANET-LAB/maps/map_b/ and are symlinked into the
+  project directory.
+-->
+<launch>
+    <copy file="map2.net.xml" />
+    <copy file="map2.rou.xml" />
+    <copy file="map2.sumocfg" type="config" />
+</launch>
