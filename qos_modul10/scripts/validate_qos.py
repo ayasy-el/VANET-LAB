@@ -491,7 +491,7 @@ def main():
     lines.append("- Menurut dokumentasi Praktikum 8, pasangan kendaraan Map A berjarak sekitar 280 m sedangkan jangkauan radio sekitar 228 m; nilai delivery yang rendah adalah sifat skenario Map A, bukan bukti bahwa satu protokol selalu lebih baik.")
     lines.append("")
 
-    REPORT.write_text("\n".join(lines) + "\n")
+    REPORT.write_text("\n".join(lines).rstrip("\n") + "\n")
 
     print(f"Checks: {len(checks)} | passed: {passed} | failed: {failed}")
     print(f"Report: {REPORT.relative_to(BASE_DIR)}")

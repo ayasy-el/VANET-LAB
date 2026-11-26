@@ -1,6 +1,6 @@
 # Laporan Validasi QoS — Modul Praktikum 10
 
-Dibuat: 2026-11-20 14:29:33
+Dibuat: 2026-11-26 12:57:53
 
 Python: 3.12.3 | CSV: `hasil/qos_summary.csv`
 
@@ -152,4 +152,3 @@ Delapan grafik dibuat dari data mentah yang tersedia; tidak ada angka pengganti 
 - Pada data Map A ini Packet Loss dan PDR tampak saling melengkapi karena kedua run memakai 38 paket dan jumlah penerimaan yang sama; keduanya tetap berasal dari dua run yang berbeda.
 - Throughput memakai jendela pengukuran aktual: dari paket pertama sampai paket terakhir, yaitu (38 − 1) × 1 s = 37 s, bukan 40 s durasi simulasi.
 - Menurut dokumentasi Praktikum 8, pasangan kendaraan Map A berjarak sekitar 280 m sedangkan jangkauan radio sekitar 228 m; nilai delivery yang rendah adalah sifat skenario Map A, bukan bukti bahwa satu protokol selalu lebih baik.
-
