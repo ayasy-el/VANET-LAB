@@ -177,6 +177,19 @@ python3 scripts/validate_qos.py
 
 Urutannya penting: grafik membaca CSV, dan validasi membaca CSV + `.sca`.
 
+Untuk menjalankan simulasi baru tanpa mengedit file, gunakan wrapper di root repo:
+
+```bash
+./run_vanet.sh aodv a both 40s
+./plot_qos.sh --map a --run runs/map_a/aodv/<id> --run runs/map_a/gpsr/<id>
+```
+
+Salinan `.sca` di `data/` **tidak ikut masuk repositori** (ukurannya 24 MB dan
+memuat path absolut mesin pembuatnya). Karena itu, pada clone baru
+`plot_qos.sh --map a` memerlukan `.sca` yang dipulihkan dari `SOURCE.md` atau
+dihasilkan ulang dengan `run_vanet.sh`. Tabel `hasil/qos_summary.csv`, delapan
+grafik, dan `hasil/validasi.md` adalah artefak tervalidasi yang disertakan.
+
 ---
 
 ## 6. Output

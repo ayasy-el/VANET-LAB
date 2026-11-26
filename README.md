@@ -293,6 +293,37 @@ exactly one variable.
 ./qos_report.py vanet_gpsr/results/GPSR_V2V_UDP-#0.sca
 ```
 
+### 4. Unified CLI (Praktikum 8–10)
+
+Run any protocol/map/test combination without editing files:
+
+```bash
+./run_vanet.sh <algorithm> <map> <test> <duration>
+
+./run_vanet.sh aodv a ping 40s
+./run_vanet.sh gpsr b both 60s
+```
+
+`algorithm` is `aodv` or `gpsr`, `map` is `a` or `b`, `test` is `ping`, `udp` or
+`both` (Ping first, then UDP). Each invocation writes to
+`runs/map_<map>/<algorithm>/<run_id>/` together with `run.log` and
+`metadata.json`, and passes `--result-dir`, so the historical results in
+`vanet_*/results` are never overwritten. Runs are serialised with `flock`
+because `veins_launchd` uses a single port.
+
+Build the QoS charts from the validated dataset, or from explicit runs:
+
+```bash
+./plot_qos.sh --map a
+./plot_qos.sh --map b
+./plot_qos.sh --all
+
+./plot_qos.sh --map a --run runs/map_a/aodv/<id> --run runs/map_a/gpsr/<id>
+```
+
+Charts are written to `plots/<timestamp>/`; `qos_modul10/grafik` is never
+overwritten. See `qos_modul10/README.md` for the full workflow.
+
 ---
 
 ## 📊 Evaluation Metrics & Output Files
