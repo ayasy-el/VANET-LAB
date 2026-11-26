@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Map B (map2) - Veins/OMNeT++ ready SUMO configuration.
+
+  Differences from the standalone ~/osm-demo style configuration:
+    * step-length is 0.1 s so that TraCI stays in sync with the
+      VeinsInetManager updateInterval of 0.1 s;
+    * the optional GUI map tiles (tiles/map2.decals.xml) are not referenced,
+      because that file is not part of the repository and SUMO refuses to
+      start when a gui_only file is missing.
+-->
+<configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
+    <input>
+        <net-file value="map2.net.xml"/>
+        <route-files value="map2.rou.xml"/>
+    </input>
+    <time>
+        <begin value="0"/>
+        <end value="1000"/>
+        <step-length value="0.1"/>
+    </time>
+    <processing>
+        <ignore-route-errors value="true"/>
+    </processing>
+    <report>
+        <no-step-log value="true"/>
+    </report>
+</configuration>

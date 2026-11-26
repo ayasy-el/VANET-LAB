@@ -10,6 +10,13 @@ vanet_gpsr/results/
 plot_qos.py
 */plot_qos.py
 
+# Praktikum 10 QoS charts are deliverables, not throwaway plot artifacts
+!qos_modul10/grafik/**/*.png
+
+# Local experiment outputs (regenerate with run_vanet.sh / plot_qos.sh)
+runs/
+plots/
+
 # Build artifacts
 out/
 *.o
