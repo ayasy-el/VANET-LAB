@@ -1,0 +1,143 @@
+{
+  "schema_version": 1,
+  "description": "Provenance manifest for the QoS data used in Praktikum 10. Every available run was verified from its .sca metadata, not from its filename.",
+  "verified_on": "2026-11-20",
+  "repository_root": "../..",
+  "combinations": [
+    {
+      "id": "map_a_aodv",
+      "map": "Map A",
+      "algorithm": "AODV",
+      "status": "available",
+      "workspace": "vanet_aodv",
+      "launch_config": "maps.launchd.xml",
+      "seedset": 0,
+      "sim_time_limit": "40s",
+      "node_count": 20,
+      "source_directory": "vanet_aodv/results",
+      "data_directory": "data/map_a_aodv",
+      "runs": [
+        {
+          "scenario": "ping",
+          "config": "AODV_V2V_Ping",
+          "file": "AODV_V2V_Ping-#0.sca",
+          "source_path": "vanet_aodv/results/AODV_V2V_Ping-#0.sca",
+          "run_id": "AODV_V2V_Ping-0-20261106-13:30:29-2652",
+          "datetime": "2026-11-06T13:30:29",
+          "sha256": "169dd2bf2cc5f61bd42158994eec5002b0779e5bcce258c5432745e280e8090c"
+        },
+        {
+          "scenario": "udp",
+          "config": "AODV_V2V_UDP",
+          "file": "AODV_V2V_UDP-#0.sca",
+          "source_path": "vanet_aodv/results/AODV_V2V_UDP-#0.sca",
+          "run_id": "AODV_V2V_UDP-0-20261106-13:33:25-3022",
+          "datetime": "2026-11-06T13:33:25",
+          "sha256": "0f80d27326e3de553c722ed67f04a2cff420cdb09dc6a9f3fdb523761e45e39b"
+        }
+      ]
+    },
+    {
+      "id": "map_a_gpsr",
+      "map": "Map A",
+      "algorithm": "GPSR",
+      "status": "available",
+      "workspace": "vanet_gpsr",
+      "launch_config": "maps.launchd.xml",
+      "seedset": 0,
+      "sim_time_limit": "40s",
+      "node_count": 20,
+      "source_directory": "vanet_gpsr/results",
+      "data_directory": "data/map_a_gpsr",
+      "provenance_note": "Nama file GPSR_*, tetapi parameter runtime par Scenario.manager launchConfig mengarah ke vanet_gpsr/maps.launchd.xml (Map A) dan jumlah kendaraannya 20. Karena itu ini run GPSR di Map A, bukan Map B.",
+      "runs": [
+        {
+          "scenario": "ping",
+          "config": "GPSR_V2V_Ping",
+          "file": "GPSR_V2V_Ping-#0.sca",
+          "source_path": "vanet_gpsr/results/GPSR_V2V_Ping-#0.sca",
+          "run_id": "GPSR_V2V_Ping-0-20261112-12:36:31-2556",
+          "datetime": "2026-11-12T12:36:31",
+          "sha256": "918d67b5cbc3ca8eedd1d30428bc78f48ef4a937fcc79f13bbf08a591475011c"
+        },
+        {
+          "scenario": "udp",
+          "config": "GPSR_V2V_UDP",
+          "file": "GPSR_V2V_UDP-#0.sca",
+          "source_path": "vanet_gpsr/results/GPSR_V2V_UDP-#0.sca",
+          "run_id": "GPSR_V2V_UDP-0-20261112-12:38:00-3298",
+          "datetime": "2026-11-12T12:38:00",
+          "sha256": "4b6e34be7be6e1dc1a28ec5e37bc1e5b76d7d18692358cc78ef96aebadec5eb5"
+        }
+      ]
+    },
+    {
+      "id": "map_b_aodv",
+      "map": "Map B",
+      "algorithm": "AODV",
+      "status": "available",
+      "workspace": "vanet_aodv",
+      "launch_config": "map2.launchd.xml",
+      "seedset": 0,
+      "sim_time_limit": "40s",
+      "node_count": 80,
+      "source_directory": "qos_modul10/data/map_b_aodv",
+      "data_directory": "data/map_b_aodv",
+      "provenance_note": "Run pertama AODV di Map B, dijalankan 2026-11-20 dengan --map b dan --result-dir terisolasi. Sebelumnya kombinasi ini belum punya hasil.",
+      "runs": [
+        {
+          "scenario": "ping",
+          "config": "AODV_V2V_Ping",
+          "file": "AODV_V2V_Ping-#0.sca",
+          "source_path": "qos_modul10/data/map_b_aodv/AODV_V2V_Ping-#0.sca",
+          "run_id": "AODV_V2V_Ping-0-20261120-13:30:59-5942",
+          "datetime": "2026-11-20T13:30:59",
+          "sha256": "24293f01afd98106d15632aae76399bdeabd8d8507196c3757392b8a5c5eda59"
+        },
+        {
+          "scenario": "udp",
+          "config": "AODV_V2V_UDP",
+          "file": "AODV_V2V_UDP-#0.sca",
+          "source_path": "qos_modul10/data/map_b_aodv/AODV_V2V_UDP-#0.sca",
+          "run_id": "AODV_V2V_UDP-0-20261120-13:31:18-5984",
+          "datetime": "2026-11-20T13:31:18",
+          "sha256": "7e79502f74a1d427166f41f238742538a025ebe0ca07fc404a57437278400788"
+        }
+      ]
+    },
+    {
+      "id": "map_b_gpsr",
+      "map": "Map B",
+      "algorithm": "GPSR",
+      "status": "available",
+      "workspace": "vanet_gpsr",
+      "launch_config": "map2.launchd.xml",
+      "seedset": 0,
+      "sim_time_limit": "40s",
+      "node_count": 80,
+      "source_directory": "qos_modul10/data/map_b_gpsr",
+      "data_directory": "data/map_b_gpsr",
+      "provenance_note": "Run ulang GPSR Map B pada 2026-11-20 dengan --map b dan --result-dir terisolasi. File Map B yang lama sudah tertimpa run Map A; run baru ini mereproduksi angka dokumentasi (27/38 ping, 26/38 UDP, 2,88 kbit/s).",
+      "runs": [
+        {
+          "scenario": "ping",
+          "config": "GPSR_V2V_Ping",
+          "file": "GPSR_V2V_Ping-#0.sca",
+          "source_path": "qos_modul10/data/map_b_gpsr/GPSR_V2V_Ping-#0.sca",
+          "run_id": "GPSR_V2V_Ping-0-20261120-13:31:28-6009",
+          "datetime": "2026-11-20T13:31:28",
+          "sha256": "dc9a4c89bd678fec92f041390a186182a975c9c5017dbb37783253f806f1c4f1"
+        },
+        {
+          "scenario": "udp",
+          "config": "GPSR_V2V_UDP",
+          "file": "GPSR_V2V_UDP-#0.sca",
+          "source_path": "qos_modul10/data/map_b_gpsr/GPSR_V2V_UDP-#0.sca",
+          "run_id": "GPSR_V2V_UDP-0-20261120-13:31:57-6043",
+          "datetime": "2026-11-20T13:31:57",
+          "sha256": "705ba50d5c7983a1e78ccd9a14fd3f6a76ca529bc5360fbd8d7a9802f2f6d1a3"
+        }
+      ]
+    }
+  ]
+}
